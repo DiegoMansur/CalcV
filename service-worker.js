@@ -1,8 +1,11 @@
-const CACHE_NAME = "velocity-app-v3";
+const CACHE_NAME = "velocity-app-v4";
 
 const urlsToCache = [
-  "index.html",
-  "manifest.json"
+  "./",
+  "./index.html",
+  "./historial.html",
+  "./manifest.json",
+  "./icon.png"
 ];
 
 self.addEventListener("install", event => {
@@ -30,10 +33,9 @@ self.addEventListener("activate", event => {
 
 self.addEventListener("fetch", event => {
   event.respondWith(
-    fetch(event.request)
+    caches.match(event.request)
       .then(response => {
-        return response;
+        return response || fetch(event.request);
       })
-      .catch(() => caches.match(event.request))
   );
 });
