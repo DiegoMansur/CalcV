@@ -1,0 +1,485 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Control de Anemometría</title>
+
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#f5f5f7">
+
+<style>
+*{
+    box-sizing:border-box;
+}
+
+body{
+    margin:0;
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto;
+    background:#e9ecef;
+    display:flex;
+    flex-direction:column;
+    min-height:100vh;
+}
+
+/* ===== HEADER ===== */
+.app-header{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    padding:15px 20px;
+    background:white;
+    position:sticky;
+    top:0;
+    z-index:1000;
+    box-shadow:0 2px 8px rgba(0,0,0,0.05);
+}
+
+.logo{
+    font-size:18px;
+    font-weight:600;
+}
+
+.history-btn{
+    background:none;
+    border:none;
+    cursor:pointer;
+}
+
+.history-btn svg{
+    width:22px;
+    height:22px;
+}
+
+/* ===== CONTENEDOR ===== */
+.container{
+    flex:1;
+    width:100%;
+    max-width:460px;
+    margin:20px auto;
+    padding:0 15px 30px 15px;
+}
+
+/* ===== TARJETAS ===== */
+.card{
+    background:white;
+    border-radius:20px;
+    padding:20px;
+    box-shadow:0 8px 25px rgba(0,0,0,0.08);
+    margin-bottom:20px;
+}
+
+h2{
+    text-align:center;
+    margin-bottom:15px;
+    font-size:17px;
+}
+
+/* ===== TABLAS ===== */
+table{
+    width:100%;
+    border-collapse:collapse;
+    font-size:13px;
+    table-layout:fixed;
+}
+
+th, td{
+    border:1px solid #dcdcdc;
+    padding:6px;
+    text-align:center;
+    word-wrap:break-word;
+}
+
+th{
+    background:#f4f4f4;
+    font-weight:600;
+}
+
+/* ===== INPUTS ===== */
+input{
+    width:100%;
+    padding:6px;
+    border-radius:8px;
+    border:1px solid #ccc;
+    font-size:13px;
+    text-align:center;
+}
+
+/* ===== BOTÓN ===== */
+button{
+    margin-top:20px;
+    width:100%;
+    padding:13px;
+    border:none;
+    border-radius:14px;
+    background:#1a73e8;
+    color:white;
+    font-size:15px;
+    font-weight:500;
+    cursor:pointer;
+    transition:0.2s;
+}
+
+button:hover{
+    opacity:0.9;
+}
+
+button:active{
+    transform:scale(0.98);
+}
+
+/* ===== RESULTADOS (para que no se deformen) ===== */
+#vprom, #sigma, #cv, 
+#area, #q,
+#bc1, #bc2, #bc3,
+#c1, #c2, #c3{
+    font-weight:500;
+}
+
+/* ===== ANIMACIONES ===== */
+
+.fade-in{
+    animation: fadeIn 0.4s ease forwards;
+}
+
+@keyframes fadeIn{
+    from{
+        opacity:0;
+        transform:translateY(10px);
+    }
+    to{
+        opacity:1;
+        transform:translateY(0);
+    }
+}
+
+.slide-in{
+    animation: slideIn 0.35s ease forwards;
+}
+
+@keyframes slideIn{
+    from{
+        opacity:0;
+        transform:translateX(15px);
+    }
+    to{
+        opacity:1;
+        transform:translateX(0);
+    }
+}
+</style>
+</head>
+
+<body>
+
+<header class="app-header">
+    <div class="logo">CalculadoraV</div>
+    <button class="history-btn" onclick="window.location.href='historial.html'">
+        <svg viewBox="0 0 24 24" fill="black">
+            <path d="M13 3a9 9 0 1 0 8.95 10H20a7 7 0 1 1-2.05-4.95L16 10h6V4l-2.05 2.05A8.96 8.96 0 0 0 13 3zm-1 5h2v6h-6v-2h4z"/>
+        </svg>
+    </button>
+</header>
+
+<div class="container">
+
+<div class="card">
+<h2>Datos de Medición</h2>
+
+<table>
+<tr>
+<th>Fecha</th>
+<th>Hora</th>
+<th>Estación</th>
+</tr>
+<tr>
+<td><input type="date" id="fecha"></td>
+<td><input type="time" id="hora"></td>
+<td><input type="text" id="estacion"></td>
+</tr>
+</table>
+
+<br>
+
+<table>
+<tr>
+<th>Repeat</th>
+<th>Stopwatch (s)</th>
+<th>Anemometer (ft)</th>
+<th>Before Corr.</th>
+<th>Corrected</th>
+</tr>
+
+<tr>
+<td>1</td>
+<td><input type="number" id="sw1"></td>
+<td><input type="number" id="an1"></td>
+<td id="bc1"></td>
+<td id="c1"></td>
+</tr>
+
+<tr>
+<td>2</td>
+<td><input type="number" id="sw2"></td>
+<td><input type="number" id="an2"></td>
+<td id="bc2"></td>
+<td id="c2"></td>
+</tr>
+
+<tr>
+<td>3</td>
+<td><input type="number" id="sw3"></td>
+<td><input type="number" id="an3"></td>
+<td id="bc3"></td>
+<td id="c3"></td>
+</tr>
+
+</table>
+</div>
+
+<div class="card">
+<h2>Resultados</h2>
+
+<table>
+<tr>
+<th>Vprom (fpm)</th>
+<th>σ</th>
+<th>CV (%)</th>
+</tr>
+<tr>
+<td id="vprom"></td>
+<td id="sigma"></td>
+<td id="cv"></td>
+</tr>
+</table>
+
+<br>
+
+<table>
+<tr>
+<th>Largo (m)</th>
+<th>Altura (m)</th>
+<th>Área (m²)</th>
+<th>Q (cfm)</th>
+</tr>
+<tr>
+<td><input type="number" id="largo"></td>
+<td><input type="number" id="altura"></td>
+<td id="area"></td>
+<td id="q"></td>
+</tr>
+</table>
+
+<button onclick="guardarRegistro()">Guardar</button>
+
+</div>
+</div>
+
+<script>
+const tablaCorreccion = [
+  {min:30,max:50,corr:14},{min:50,max:70,corr:15},{min:70,max:90,corr:15},
+  {min:90,max:100,corr:15},{min:100,max:200,corr:15},{min:200,max:300,corr:15},
+  {min:300,max:400,corr:10},{min:400,max:500,corr:0},{min:500,max:600,corr:-5},
+  {min:600,max:700,corr:-10},{min:700,max:800,corr:-15},{min:800,max:900,corr:-20},
+  {min:900,max:1000,corr:-25},{min:1000,max:1200,corr:-30},{min:1200,max:1400,corr:-35},
+  {min:1400,max:1600,corr:-45},{min:1600,max:1800,corr:-55},{min:1800,max:2000,corr:-60},
+  {min:2000,max:2200,corr:-65},{min:2200,max:2400,corr:-75},{min:2400,max:2600,corr:-90},
+  {min:2600,max:2800,corr:-100},{min:2800,max:3000,corr:-110},{min:3000,max:3200,corr:-120},
+  {min:3200,max:3400,corr:-135},{min:3400,max:3600,corr:-150},{min:3600,max:3800,corr:-165},
+  {min:3800,max:4000,corr:-175},{min:4000,max:4200,corr:-180},{min:4200,max:4400,corr:-190},
+  {min:4400,max:4600,corr:-195},{min:4600,max:4800,corr:-200},{min:4800,max:5000,corr:-225}
+];
+
+function obtenerCorreccion(valor){
+  for(let r of tablaCorreccion){
+    if(valor>=r.min && valor<r.max){return r.corr;}
+  }
+  return 0;
+}
+
+function calcular(){
+  let corregidos=[];
+  for(let i=1;i<=3;i++){
+    let sw=parseFloat(document.getElementById("sw"+i).value);
+    let an=parseFloat(document.getElementById("an"+i).value);
+    if(!isNaN(sw)&&!isNaN(an)&&sw!==0){
+      let before=(an/sw)*60;
+      document.getElementById("bc"+i).textContent=before.toFixed(2);
+      let corregido=before+obtenerCorreccion(before);
+      document.getElementById("c"+i).textContent=corregido.toFixed(2);
+      corregidos.push(corregido);
+    }else{
+      document.getElementById("bc"+i).textContent="";
+      document.getElementById("c"+i).textContent="";
+    }
+  }
+
+  if(corregidos.length>0){
+    let promedio=corregidos.reduce((a,b)=>a+b,0)/corregidos.length;
+    let suma=corregidos.map(v=>Math.pow(v-promedio,2)).reduce((a,b)=>a+b,0);
+    let sigma=Math.sqrt(suma/corregidos.length);
+    let cv=promedio!==0?(sigma/promedio)*100:0;
+
+    document.getElementById("vprom").textContent=promedio.toFixed(2);
+    document.getElementById("sigma").textContent=sigma.toFixed(2);
+    document.getElementById("cv").textContent=cv.toFixed(2);
+
+    let largo=parseFloat(document.getElementById("largo").value);
+    let altura=parseFloat(document.getElementById("altura").value);
+
+    if(!isNaN(largo)&&!isNaN(altura)){
+      let area=largo*altura*0.95;
+      document.getElementById("area").textContent=area.toFixed(3);
+      let q=(area*promedio)/0.09290304;
+      document.getElementById("q").textContent=q.toFixed(2);
+    }
+  }else{
+    document.getElementById("vprom").textContent="";
+    document.getElementById("sigma").textContent="";
+    document.getElementById("cv").textContent="";
+    document.getElementById("area").textContent="";
+    document.getElementById("q").textContent="";
+  }
+}
+
+document.querySelectorAll("input").forEach(el=>{
+  el.addEventListener("input",calcular);
+});
+
+if("serviceWorker" in navigator){
+  navigator.serviceWorker.register("service-worker.js");
+}
+
+function guardarRegistro(){
+
+  let registros = JSON.parse(localStorage.getItem("registrosApp")) || [];
+
+  let nuevo = {
+    nombre: "Guardado " + (registros.length + 1),
+    datos:{
+      fecha: fecha.value,
+      hora: hora.value,
+      estacion: estacion.value,
+
+      sw1: sw1.value,
+      sw2: sw2.value,
+      sw3: sw3.value,
+
+      an1: an1.value,
+      an2: an2.value,
+      an3: an3.value,
+
+      bc1: bc1.textContent,
+      bc2: bc2.textContent,
+      bc3: bc3.textContent,
+
+      c1: c1.textContent,
+      c2: c2.textContent,
+      c3: c3.textContent,
+
+      vprom: vprom.textContent,
+      sigma: sigma.textContent,
+      cv: cv.textContent,
+
+      largo: largo.value,
+      altura: altura.value,
+      area: area.textContent,
+      q: q.textContent
+    }
+  };
+
+  if(!nuevo.datos.vprom){
+    alert("Primero debes calcular los datos.");
+    return;
+  }
+
+  registros.push(nuevo);
+  localStorage.setItem("registrosApp", JSON.stringify(registros));
+
+  alert("Guardado correctamente ✅");
+}
+
+// === MODO VISTA ===
+
+function obtenerParametro(nombre){
+  const urlParams = new URLSearchParams(window.location.search);
+  return urlParams.get(nombre);
+}
+
+let viewIndex = obtenerParametro("view");
+
+if(viewIndex !== null){
+
+  let registros = JSON.parse(localStorage.getItem("registrosApp")) || [];
+  let registro = registros[viewIndex];
+
+  if(registro){
+
+    let d = registro.datos;
+
+    // Cambiar título del header
+    document.querySelector(".logo").textContent = registro.nombre + " (Modo Vista)";
+    document.querySelector(".logo").classList.add("slide-in");
+
+    // Llenar datos
+    fecha.value = d.fecha;
+    hora.value = d.hora;
+    estacion.value = d.estacion;
+
+    sw1.value = d.sw1;
+    sw2.value = d.sw2;
+    sw3.value = d.sw3;
+
+    an1.value = d.an1;
+    an2.value = d.an2;
+    an3.value = d.an3;
+
+    bc1.textContent = d.bc1;
+    bc2.textContent = d.bc2;
+    bc3.textContent = d.bc3;
+
+    c1.textContent = d.c1;
+    c2.textContent = d.c2;
+    c3.textContent = d.c3;
+
+    vprom.textContent = d.vprom;
+    sigma.textContent = d.sigma;
+    cv.textContent = d.cv;
+
+    largo.value = d.largo;
+    altura.value = d.altura;
+    area.textContent = d.area;
+    q.textContent = d.q;
+
+    // Desactivar inputs
+    document.querySelectorAll("input").forEach(el=>{
+      el.disabled = true;
+      el.style.background = "#f3f3f3";
+      el.style.cursor = "default";
+    });
+
+    // Ocultar botón Guardar
+    let btnGuardar = document.querySelector("button[onclick='guardarRegistro()']");
+    if(btnGuardar){
+      btnGuardar.style.display = "none";
+    }
+
+    // Animar tarjetas
+    document.querySelectorAll(".card").forEach(card=>{
+      card.classList.add("fade-in");
+    });
+
+    // Botón volver
+    let volver = document.createElement("button");
+    volver.textContent = "Volver al Historial";
+    volver.style.marginTop = "15px";
+    volver.classList.add("fade-in");
+    volver.onclick = ()=> window.location.href="historial.html";
+
+    document.querySelector(".card:last-child").appendChild(volver);
+  }
+}
+</script>
+
+</body>
+</html>
