@@ -192,6 +192,41 @@ input[type="time"] {
 td {
     overflow: hidden;
 }
+
+/* ---- Ajustes mesa de Datos de Medición (robustos) ---- */
+.measuring-table {
+  table-layout: fixed; /* ya lo tienes, pero reafirmamos */
+}
+
+/* Evita que inputs sobresalgan: usamos calc para considerar padding */
+.measuring-table input {
+  display: block;
+  margin: 6px auto;                /* centra un poco los inputs dentro de la celda */
+  width: calc(100% - 12px);        /* deja espacio para padding/border */
+  max-width: 100%;
+  box-sizing: border-box;
+}
+
+/* inputs específicos: fecha y hora un poco más largos visualmente */
+.fecha-input,
+.hora-input {
+  width: calc(100% - 12px);
+  min-width: 0;
+}
+
+/* Estación más corta (centrada dentro de la celda) */
+.estacion-input {
+  width: 60%;          /* ajusta a 50-75% hasta que te guste */
+  min-width: 40px;
+  max-width: 100%;
+  box-sizing: border-box;
+}
+
+/* Fuerza que las celdas respeten el ancho asignado */
+.measuring-table th, .measuring-table td {
+  overflow: hidden;
+  padding: 6px 8px;
+}
 </style>
 </head>
 
@@ -514,6 +549,7 @@ if(viewIndex !== null){
 </body>
 
 </html>
+
 
 
 
