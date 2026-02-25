@@ -192,51 +192,6 @@ input[type="time"] {
 td {
     overflow: hidden;
 }
-
-/* Añadir al final del <style> en index.html */
- /* Normaliza inputs date/time en iOS/Safari PWAs */
-html, body {
-  -webkit-text-size-adjust: 100%; /* evita reescalado de texto en iOS */
-}
-
-input[type="date"],
-input[type="time"] {
-  -webkit-appearance: none;
-  appearance: none;
-  height: 34px;              /* altura fija que coincide con otros inputs */
-  line-height: 34px;         /* alinea el texto verticalmente */
-  padding: 4px 8px;          /* controla el padding interno */
-  font-size: 16px;          /* evita el zoom automático en iOS (>=16px) */
-  box-sizing: border-box;    /* incluye padding en la anchura/alto */
-  background-clip: padding-box;
-  border-radius: 8px;
-  vertical-align: middle;
-  max-width: 100%;
-}
-
-/* Forzar que las subpartes internas usen el mismo tamaño/line-height */
-input[type="date"]::-webkit-datetime-edit,
-input[type="time"]::-webkit-datetime-edit {
-  padding: 0 2px;
-  font: inherit;
-  line-height: 34px;
-}
-
-/* Opcional: ajustar el indicador calendario/clear para que no desborde */
-input[type="date"]::-webkit-calendar-picker-indicator,
-input[type="time"]::-webkit-clear-button {
-  height: 28px;
-  width: 28px;
-  margin-left: 6px;
-  opacity: 0.9;
-}
-
-/* Asegura que dentro de tablas los inputs no sobresalgan */
-table input,
-.card input {
-  max-width: 100%;
-  box-sizing: border-box;
-}
 </style>
 </head>
 
@@ -554,6 +509,7 @@ if(viewIndex !== null){
 </body>
 
 </html>
+
 
 
 
