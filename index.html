@@ -212,16 +212,21 @@ td {
 <h2>Datos de Medición</h2>
 
 <table class="measuring-table">
-<tr>
-<th>Fecha</th>
-<th>Hora</th>
-<th>Estación</th>
-</tr>
-<tr>
-<td><input type="date" id="fecha" class="fecha-input"></td>
-<td><input type="time" id="hora" class="hora-input"></td>
-<td><input type="text" id="estacion" class="estacion-input"></td>
-</tr>
+  <colgroup>
+    <col style="width:40%">
+    <col style="width:40%">
+    <col style="width:20%">
+  </colgroup>
+  <tr>
+    <th>Fecha</th>
+    <th>Hora</th>
+    <th>Estación</th>
+  </tr>
+  <tr>
+    <td><input type="date" id="fecha" class="fecha-input"></td>
+    <td><input type="time" id="hora" class="hora-input"></td>
+    <td><input type="text" id="estacion" class="estacion-input"></td>
+  </tr>
 </table>
 
 <br>
@@ -509,6 +514,7 @@ if(viewIndex !== null){
 </body>
 
 </html>
+
 
 
 
