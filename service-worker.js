@@ -1,4 +1,4 @@
-const CACHE_NAME = "velocity-app-v5";
+const CACHE_NAME = "velocity-app-v6";
 
 const urlsToCache = [
   "./",
@@ -39,4 +39,5 @@ self.addEventListener("fetch", event => {
       })
   );
 });
+
 
