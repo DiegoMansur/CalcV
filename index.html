@@ -578,8 +578,14 @@ if(viewIndex !== null){
     document.querySelector(".card:last-child").appendChild(volver);
   }
 }
+
+// Forzar teclado numérico en iPhone
+document.querySelectorAll("input[type='number']").forEach(el=>{
+  el.setAttribute("inputmode","decimal");
+});
 </script>
 
 </body>
 
 </html>
+
