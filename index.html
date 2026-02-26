@@ -585,14 +585,17 @@ if(viewIndex !== null){
   }
 }
 
-// Forzar teclado numérico en iPhone
-document.querySelectorAll("input[type='number']").forEach(el=>{
-  el.setAttribute("inputmode","decimal");
+// Busca esto en tu script y asegúralo así:
+document.querySelectorAll("input[type='number']").forEach(el => {
+    el.setAttribute("inputmode", "decimal");
+    el.setAttribute("pattern", "[0-9]*");
+    el.setAttribute("step", "any"); // Muy importante para cálculos técnicos
 });
 </script>
 
 </body>
 
 </html>
+
 
 
