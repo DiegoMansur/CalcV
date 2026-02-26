@@ -453,8 +453,19 @@ function guardarRegistro(){
 
   let registros = JSON.parse(localStorage.getItem("registrosApp")) || [];
 
+  if(!vprom.textContent){
+    alert("Primero debes calcular los datos.");
+    return;
+  }
+
+  let nombreEstacion = estacion.value.trim();
+
+  if(!nombreEstacion){
+    nombreEstacion = "Sin estación";
+  }
+
   let nuevo = {
-    nombre: "Guardado " + (registros.length + 1),
+    nombre: nombreEstacion,
     datos:{
       fecha: fecha.value,
       hora: hora.value,
@@ -486,11 +497,6 @@ function guardarRegistro(){
       q: q.textContent
     }
   };
-
-  if(!nuevo.datos.vprom){
-    alert("Primero debes calcular los datos.");
-    return;
-  }
 
   registros.push(nuevo);
   localStorage.setItem("registrosApp", JSON.stringify(registros));
@@ -588,4 +594,5 @@ document.querySelectorAll("input[type='number']").forEach(el=>{
 </body>
 
 </html>
+
 
