@@ -124,6 +124,89 @@ function guardarRegistros(data){
     localStorage.setItem("registrosApp", JSON.stringify(data));
 }
 
+function copiar(texto){
+    navigator.clipboard.writeText(texto).then(()=>{
+        alert("Copiado al portapapeles ✅");
+    }).catch(()=>{
+        alert("No se pudo copiar automáticamente.");
+    });
+}
+
+/* ========= EXPORTAR SIMPLE (sin encabezados) ========= */
+function exportarSimple(index){
+    let registros = obtenerRegistros();
+    let r = registros[index].datos;
+
+    let fila = [
+        r.fecha,
+        r.hora,
+        r.estacion,
+
+        r.sw1, r.an1, r.bc1, r.c1,
+        r.sw2, r.an2, r.bc2, r.c2,
+        r.sw3, r.an3, r.bc3, r.c3,
+
+        r.vprom,
+        r.sigma,
+        r.cv,
+
+        r.largo,
+        r.altura,
+        r.area,
+        r.q
+    ].join("\t");
+
+    copiar(fila);
+}
+
+/* ========= EXPORTAR CON DETALLES (con encabezados) ========= */
+function exportarConDetalles(index){
+    let registros = obtenerRegistros();
+    let r = registros[index].datos;
+
+    let encabezados = [
+        "Fecha",
+        "Hora",
+        "Estación",
+
+        "SW1","AN1","Before1","Corr1",
+        "SW2","AN2","Before2","Corr2",
+        "SW3","AN3","Before3","Corr3",
+
+        "Vprom",
+        "Sigma",
+        "CV",
+
+        "Largo",
+        "Altura",
+        "Área",
+        "Q"
+    ].join("\t");
+
+    let fila = [
+        r.fecha,
+        r.hora,
+        r.estacion,
+
+        r.sw1, r.an1, r.bc1, r.c1,
+        r.sw2, r.an2, r.bc2, r.c2,
+        r.sw3, r.an3, r.bc3, r.c3,
+
+        r.vprom,
+        r.sigma,
+        r.cv,
+
+        r.largo,
+        r.altura,
+        r.area,
+        r.q
+    ].join("\t");
+
+    copiar(encabezados + "\n" + fila);
+}
+
+/* ========= LISTA ========= */
+
 function renderLista(){
 
     let contenedor = document.getElementById("contenido");
@@ -141,14 +224,16 @@ function renderLista(){
             <button class="boton-registro" onclick="window.location.href='index.html?view=${index}'">
                 ${reg.nombre}
             </button>
+
             <div class="opciones">
                 <button onclick="renombrar(${index})">✏ Renombrar</button>
                 <button onclick="eliminar(${index})">🗑 Eliminar</button>
+                <button onclick="exportarSimple(${index})">📋 Exportar</button>
+                <button onclick="exportarConDetalles(${index})">📄 Exportar con detalles</button>
             </div>
         `;
     });
 }
-
 
 function eliminar(index){
     let registros = obtenerRegistros();
@@ -174,6 +259,7 @@ renderLista();
 </body>
 
 </html>
+
 
 
 
