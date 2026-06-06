@@ -509,7 +509,9 @@ function guardarRegistro(){
     .forEach(id => document.getElementById(id).textContent = '');
   // Restaurar fecha/hora
   const hoy = new Date();
-  document.getElementById('fecha').value = hoy.toISOString().split('T')[0];
+  document.getElementById('fecha').value = hoy.getFullYear() + '-' + 
+      String(hoy.getMonth()+1).padStart(2,'0') + '-' + 
+      String(hoy.getDate()).padStart(2,'0');
   document.getElementById('hora').value = hoy.toTimeString().slice(0,5);
     
 }
@@ -605,7 +607,9 @@ document.querySelectorAll("input[type='number']").forEach(el => {
 // Fecha y hora automáticas
 (function(){
   const hoy = new Date();
-  const fecha = hoy.toISOString().split('T')[0];
+  const fecha = hoy.getFullYear() + '-' + 
+      String(hoy.getMonth()+1).padStart(2,'0') + '-' + 
+      String(hoy.getDate()).padStart(2,'0');
   const hora = hoy.toTimeString().slice(0,5);
   document.getElementById('fecha').value = fecha;
   document.getElementById('hora').value = hora;
