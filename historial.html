@@ -106,8 +106,9 @@ td {
 <body>
 
 <header class="app-header">
-    Historial
-    <button onclick="window.location.href='index.html'">Inicio</button>
+  Historial
+  <button onclick="window.location.href='index.html'">Inicio</button>
+  <button onclick="exportarTodo()">📦 Exportar todo</button>
 </header>
 
 <div class="container">
@@ -205,6 +206,17 @@ function exportarConDetalles(index){
     copiar(encabezados + "\n" + fila);
 }
 
+function exportarTodo(){
+  let registros = obtenerRegistros();
+  if(registros.length === 0){ alert('No hay registros.'); return; }
+  let encabezados = ["Nombre","Fecha","Hora","Estación","SW1","AN1","Before1","Corr1","SW2","AN2","Before2","Corr2","SW3","AN3","Before3","Corr3","Vprom","Sigma","CV","Largo","Altura","Área","Q"].join("\t");
+  let filas = registros.map(reg => {
+    let r = reg.datos;
+    return [reg.nombre, r.fecha, r.hora, r.estacion, r.sw1, r.an1, r.bc1, r.c1, r.sw2, r.an2, r.bc2, r.c2, r.sw3, r.an3, r.bc3, r.c3, r.vprom, r.sigma, r.cv, r.largo, r.altura, r.area, r.q].join("\t");
+  });
+  copiar(encabezados + "\n" + filas.join("\n"));
+}
+
 /* ========= LISTA ========= */
 
 function renderLista(){
@@ -236,10 +248,11 @@ function renderLista(){
 }
 
 function eliminar(index){
-    let registros = obtenerRegistros();
-    registros.splice(index,1);
-    guardarRegistros(registros);
-    renderLista();
+  if(!confirm('¿Eliminar este registro? Esta acción no se puede deshacer.')) return;
+  let registros = obtenerRegistros();
+  registros.splice(index,1);
+  guardarRegistros(registros);
+  renderLista();
 }
 
 function renombrar(index){
