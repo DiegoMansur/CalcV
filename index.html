@@ -374,7 +374,7 @@ input[type="time"]::-webkit-clear-button {
 </div>
 </div>
 
-<script>
+2<script>
 const tablaCorreccion = [
   {min:30,max:50,corr:14},{min:50,max:70,corr:15},{min:70,max:90,corr:15},
   {min:90,max:100,corr:15},{min:100,max:200,corr:15},{min:200,max:300,corr:15},
@@ -502,6 +502,16 @@ function guardarRegistro(){
   localStorage.setItem("registrosApp", JSON.stringify(registros));
 
   alert("Guardado correctamente ✅");
+
+  // Limpiar todo
+  document.querySelectorAll('input').forEach(el => el.value = '');
+  ['bc1','bc2','bc3','c1','c2','c3','vprom','sigma','cv','area','q']
+    .forEach(id => document.getElementById(id).textContent = '');
+  // Restaurar fecha/hora
+  const hoy = new Date();
+  document.getElementById('fecha').value = hoy.toISOString().split('T')[0];
+  document.getElementById('hora').value = hoy.toTimeString().slice(0,5);
+    
 }
 
 // === MODO VISTA ===
@@ -591,6 +601,16 @@ document.querySelectorAll("input[type='number']").forEach(el => {
     el.setAttribute("pattern", "[0-9]*");
     el.setAttribute("step", "any"); // Muy importante para cálculos técnicos
 });
+
+// Fecha y hora automáticas
+(function(){
+  const hoy = new Date();
+  const fecha = hoy.toISOString().split('T')[0];
+  const hora = hoy.toTimeString().slice(0,5);
+  document.getElementById('fecha').value = fecha;
+  document.getElementById('hora').value = hora;
+})();
+    
 </script>
 
 </body>
