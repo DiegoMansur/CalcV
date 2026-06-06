@@ -631,7 +631,7 @@ document.querySelectorAll("input[type='number']").forEach(el => {
       lastClick = now;
 
       // Doble click = modo manual
-      if(gap < 300){
+      if(gap < 500){
         clearInterval(interval);
         running = false;
         el.removeAttribute('readonly');
