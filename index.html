@@ -102,7 +102,7 @@ input{
     padding:0 6px;
     border-radius:8px;
     border:1px solid #ccc;
-    font-size:13px;
+    font-size:16px;
     text-align:center;
     background:white;
 
@@ -311,7 +311,7 @@ input[type="time"]::-webkit-clear-button {
 
 <tr>
 <td>1</td>
-<td><input type="number" id="sw1"></td>
+<td><input type="number" id="sw1" readonly placeholder="tap"></td>
 <td><input type="number" id="an1"></td>
 <td id="bc1"></td>
 <td id="c1"></td>
@@ -319,7 +319,7 @@ input[type="time"]::-webkit-clear-button {
 
 <tr>
 <td>2</td>
-<td><input type="number" id="sw2"></td>
+<td><input type="number" id="sw2" readonly placeholder="tap"></td>
 <td><input type="number" id="an2"></td>
 <td id="bc2"></td>
 <td id="c2"></td>
@@ -327,7 +327,7 @@ input[type="time"]::-webkit-clear-button {
 
 <tr>
 <td>3</td>
-<td><input type="number" id="sw3"></td>
+<td><input type="number" id="sw3" readonly placeholder="tap"></td>
 <td><input type="number" id="an3"></td>
 <td id="bc3"></td>
 <td id="c3"></td>
@@ -374,7 +374,7 @@ input[type="time"]::-webkit-clear-button {
 </div>
 </div>
 
-<script>
+2<script>
 const tablaCorreccion = [
   {min:30,max:50,corr:14},{min:50,max:70,corr:15},{min:70,max:90,corr:15},
   {min:90,max:100,corr:15},{min:100,max:200,corr:15},{min:200,max:300,corr:15},
@@ -502,6 +502,18 @@ function guardarRegistro(){
   localStorage.setItem("registrosApp", JSON.stringify(registros));
 
   alert("Guardado correctamente ✅");
+
+  // Limpiar todo
+  document.querySelectorAll('input').forEach(el => el.value = '');
+  ['bc1','bc2','bc3','c1','c2','c3','vprom','sigma','cv','area','q']
+    .forEach(id => document.getElementById(id).textContent = '');
+  // Restaurar fecha/hora
+  const hoy = new Date();
+  document.getElementById('fecha').value = hoy.getFullYear() + '-' + 
+      String(hoy.getMonth()+1).padStart(2,'0') + '-' + 
+      String(hoy.getDate()).padStart(2,'0');
+  document.getElementById('hora').value = hoy.toTimeString().slice(0,5);
+    
 }
 
 // === MODO VISTA ===
@@ -591,11 +603,72 @@ document.querySelectorAll("input[type='number']").forEach(el => {
     el.setAttribute("pattern", "[0-9]*");
     el.setAttribute("step", "any"); // Muy importante para cálculos técnicos
 });
+
+// Fecha y hora automáticas
+(function(){
+  const hoy = new Date();
+  const fecha = hoy.getFullYear() + '-' + 
+      String(hoy.getMonth()+1).padStart(2,'0') + '-' + 
+      String(hoy.getDate()).padStart(2,'0');
+  const hora = hoy.toTimeString().slice(0,5);
+  document.getElementById('fecha').value = fecha;
+  document.getElementById('hora').value = hora;
+})();
+
+// Cronómetro por casilla
+(function(){
+  [1,2,3].forEach(i => {
+    let el = document.getElementById('sw'+i);
+    let running = false;
+    let startTime = null;
+    let interval = null;
+    let lastClick = 0;
+
+    el.addEventListener('touchend', function(e){
+      e.preventDefault();
+      let now = Date.now();
+      let gap = now - lastClick;
+      lastClick = now;
+
+      // Doble click = modo manual
+      if(gap < 500){
+        clearInterval(interval);
+        running = false;
+        el.removeAttribute('readonly');
+        el.value = '';
+        el.focus();
+        return;
+      }
+
+      if(!running){
+        // Iniciar
+        el.setAttribute('readonly', true);
+        startTime = Date.now();
+        running = true;
+        interval = setInterval(()=>{
+          let seg = (Date.now() - startTime) / 1000;
+          el.value = seg.toFixed(2);
+          calcular();
+        }, 50);
+      } else {
+        // Parar
+        clearInterval(interval);
+        running = false;
+        let seg = (Date.now() - startTime) / 1000;
+        el.value = seg.toFixed(2);
+        calcular();
+      }
+    });
+  });
+})();
+    
 </script>
 
 </body>
 
 </html>
+
+
 
 
 
