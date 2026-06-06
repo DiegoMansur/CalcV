@@ -624,7 +624,8 @@ document.querySelectorAll("input[type='number']").forEach(el => {
     let interval = null;
     let lastClick = 0;
 
-    el.addEventListener('click', function(e){
+    el.addEventListener('touchend', function(e){
+      e.preventDefault();
       let now = Date.now();
       let gap = now - lastClick;
       lastClick = now;
