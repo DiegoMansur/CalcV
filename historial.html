@@ -99,30 +99,130 @@ td {
     overflow: hidden;
 }
 
-
+#loginOverlay{
+    position:fixed;inset:0;background:rgba(0,0,0,0.5);
+    display:flex;align-items:center;justify-content:center;z-index:9999;
+}
+#loginBox{
+    background:white;border-radius:20px;padding:30px 25px;
+    text-align:center;max-width:320px;width:90%;
+    box-shadow:0 20px 60px rgba(0,0,0,0.3);
+}
+#loginBox h2{margin:0 0 8px 0;font-size:20px;}
+#loginBox p{color:#666;font-size:14px;margin:0 0 20px 0;}
+#btnGoogle{
+    display:flex;align-items:center;justify-content:center;gap:10px;
+    width:100%;padding:12px;border:1px solid #ddd;border-radius:12px;
+    background:white;font-size:15px;font-weight:500;cursor:pointer;margin-top:0;color:#333;
+}
+#btnGoogle img{width:20px;height:20px;}
+#syncStatus{font-size:11px;color:#999;text-align:center;padding:5px 0;}
+#userInfo{display:flex;align-items:center;gap:8px;font-size:13px;}
+#userInfo img{width:28px;height:28px;border-radius:50%;}
+#btnLogout{background:none;border:none;font-size:12px;color:#999;cursor:pointer;padding:0;margin:0;width:auto;margin-top:0;}
+    
 </style>
+
+
 </head>
 
 <body>
 
+<div id="loginOverlay">
+  <div id="loginBox">
+    <h2>CalculadoraV</h2>
+    <p>Inicia sesión para ver tu historial.</p>
+    <button id="btnGoogle" onclick="loginGoogle()">
+      <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="Google">
+      Continuar con Google
+    </button>
+  </div>
+</div>
+    
 <header class="app-header">
   Historial
+  <div id="userInfo" style="display:none">
+      <img id="userPhoto" src="" alt="">
+      <button id="btnLogout" onclick="logout()">Salir</button>
+  </div>
   <button onclick="window.location.href='index.html'">Inicio</button>
   <button onclick="exportarTodo()">📦 Exportar todo</button>
 </header>
+
+<div id="syncStatus">Conectando...</div>
 
 <div class="container">
 <div class="card" id="contenido"></div>
 </div>
 
-<script>
+<script type="module">
 
-function obtenerRegistros(){
-    return JSON.parse(localStorage.getItem("registrosApp")) || [];
-}
+import { initializeApp } from "https://www.gstatic.com/firebasejs/12.14.0/firebase-app.js";
+import { getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged }
+    from "https://www.gstatic.com/firebasejs/12.14.0/firebase-auth.js";
+import { getFirestore, collection, getDocs, doc, deleteDoc, updateDoc, query, orderBy, enableIndexedDbPersistence }
+    from "https://www.gstatic.com/firebasejs/12.14.0/firebase-firestore.js";
 
-function guardarRegistros(data){
-    localStorage.setItem("registrosApp", JSON.stringify(data));
+const firebaseConfig = {
+    apiKey: "AIzaSyAFwMlGgKcJGOcFAHlGXC-lR-zMpSJpLiM",
+    authDomain: "calcv-5990e.firebaseapp.com",
+    projectId: "calcv-5990e",
+    storageBucket: "calcv-5990e.firebasestorage.app",
+    messagingSenderId: "986351043016",
+    appId: "1:986351043016:web:79386c3a1205fc1ef880fd"
+};
+
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db = getFirestore(app);
+enableIndexedDbPersistence(db).catch(()=>{});
+
+const provider = new GoogleAuthProvider();
+let currentUser = null;
+let registrosCache = [];
+
+window.loginGoogle = async function(){
+    try { await signInWithPopup(auth, provider); }
+    catch(e){ alert("Error: " + e.message); }
+};
+window.logout = async function(){ await signOut(auth); };
+
+onAuthStateChanged(auth, async user => {
+    if(user){
+        currentUser = user;
+        document.getElementById('loginOverlay').style.display = 'none';
+        document.getElementById('userInfo').style.display = 'flex';
+        document.getElementById('userPhoto').src = user.photoURL || '';
+        document.getElementById('syncStatus').textContent = '✅ ' + user.email;
+        await cargarRegistros();
+    } else {
+        currentUser = null;
+        document.getElementById('loginOverlay').style.display = 'flex';
+        document.getElementById('userInfo').style.display = 'none';
+        document.getElementById('syncStatus').textContent = 'Sin sesión';
+        document.getElementById('contenido').innerHTML = '<div class="vacio">Inicia sesión para ver tus registros.</div>';
+    }
+});
+
+async function cargarRegistros(){
+    try {
+        let q = query(collection(db, "usuarios", currentUser.uid, "registros"), orderBy("timestamp","asc"));
+        let snap = await getDocs(q);
+        registrosCache = snap.docs.map(d => ({id: d.id, ...d.data()}));
+        renderLista();
+    } catch(e){
+        document.getElementById('syncStatus').textContent = '⚠️ Sin conexión — datos locales';
+        // Intentar con caché local
+        try {
+            const { getDocsFromCache } = await import("https://www.gstatic.com/firebasejs/12.14.0/firebase-firestore.js");
+            let q = query(collection(db, "usuarios", currentUser.uid, "registros"), orderBy("timestamp","asc"));
+            let snap = await getDocsFromCache(q);
+            registrosCache = snap.docs.map(d => ({id: d.id, ...d.data()}));
+            renderLista();
+        } catch(e2){
+            document.getElementById('contenido').innerHTML = '<div class="vacio">Sin datos locales aún. Conéctate una vez primero.</div>';
+        }
+    }
 }
 
 function copiar(texto){
@@ -133,113 +233,66 @@ function copiar(texto){
     });
 }
 
-/* ========= EXPORTAR SIMPLE (sin encabezados) ========= */
-function exportarSimple(index){
-    let registros = obtenerRegistros();
-    let r = registros[index].datos;
-
+window.exportarSimple = function(index){
+    let r = registrosCache[index].datos;
     let fila = [
-        r.fecha,
-        r.hora,
-        r.estacion,
-
+        r.fecha, r.hora, r.estacion,
         r.sw1, r.an1, r.bc1, r.c1,
         r.sw2, r.an2, r.bc2, r.c2,
         r.sw3, r.an3, r.bc3, r.c3,
-
-        r.vprom,
-        r.sigma,
-        r.cv,
-
-        r.largo,
-        r.altura,
-        r.area,
-        r.q
+        r.vprom, r.sigma, r.cv,
+        r.largo, r.altura, r.area, r.q
     ].join("\t");
-
     copiar(fila);
 }
 
-/* ========= EXPORTAR CON DETALLES (con encabezados) ========= */
-function exportarConDetalles(index){
-    let registros = obtenerRegistros();
-    let r = registros[index].datos;
-
+window.exportarConDetalles = function(index){
+    let r = registrosCache[index].datos;
     let encabezados = [
-        "Fecha",
-        "Hora",
-        "Estación",
-
+        "Fecha","Hora","Estación",
         "SW1","AN1","Before1","Corr1",
         "SW2","AN2","Before2","Corr2",
         "SW3","AN3","Before3","Corr3",
-
-        "Vprom",
-        "Sigma",
-        "CV",
-
-        "Largo",
-        "Altura",
-        "Área",
-        "Q"
+        "Vprom","Sigma","CV",
+        "Largo","Altura","Área","Q"
     ].join("\t");
-
     let fila = [
-        r.fecha,
-        r.hora,
-        r.estacion,
-
+        r.fecha, r.hora, r.estacion,
         r.sw1, r.an1, r.bc1, r.c1,
         r.sw2, r.an2, r.bc2, r.c2,
         r.sw3, r.an3, r.bc3, r.c3,
-
-        r.vprom,
-        r.sigma,
-        r.cv,
-
-        r.largo,
-        r.altura,
-        r.area,
-        r.q
+        r.vprom, r.sigma, r.cv,
+        r.largo, r.altura, r.area, r.q
     ].join("\t");
-
     copiar(encabezados + "\n" + fila);
 }
 
-function exportarTodo(){
-  let registros = obtenerRegistros();
-  if(registros.length === 0){ alert('No hay registros.'); return; }
-  let encabezados = ["Nombre","Fecha","Hora","Estación","SW1","AN1","Before1","Corr1","SW2","AN2","Before2","Corr2","SW3","AN3","Before3","Corr3","Vprom","Sigma","CV","Largo","Altura","Área","Q"].join("\t");
-  let filas = registros.map(reg => {
-    let r = reg.datos;
-    return [reg.nombre, r.fecha, r.hora, r.estacion, r.sw1, r.an1, r.bc1, r.c1, r.sw2, r.an2, r.bc2, r.c2, r.sw3, r.an3, r.bc3, r.c3, r.vprom, r.sigma, r.cv, r.largo, r.altura, r.area, r.q].join("\t");
-  });
-  copiar(encabezados + "\n" + filas.join("\n"));
+window.exportarTodo = function(index){
+    let registros = registrosCache;
+    if(registros.length === 0){ alert('No hay registros.'); return; }
+    let encabezados = ["Nombre","Fecha","Hora","Estación","SW1","AN1","Before1","Corr1","SW2","AN2","Before2","Corr2","SW3","AN3","Before3","Corr3","Vprom","Sigma","CV","Largo","Altura","Área","Q"].join("\t");
+    let filas = registros.map(reg => {
+        let r = reg.datos;
+        return [reg.nombre, r.fecha, r.hora, r.estacion, r.sw1, r.an1, r.bc1, r.c1, r.sw2, r.an2, r.bc2, r.c2, r.sw3, r.an3, r.bc3, r.c3, r.vprom, r.sigma, r.cv, r.largo, r.altura, r.area, r.q].join("\t");
+    });
+    copiar(encabezados + "\n" + filas.join("\n"));
 }
 
-/* ========= LISTA ========= */
-
 function renderLista(){
-
     let contenedor = document.getElementById("contenido");
-    let registros = obtenerRegistros();
-
-    if(registros.length === 0){
+    if(registrosCache.length === 0){
         contenedor.innerHTML = '<div class="vacio">Aquí aparecerán los registros guardados.</div>';
         return;
     }
-
     contenedor.innerHTML = "";
-
-    registros.forEach((reg,index)=>{
+    registrosCache.forEach((reg, index) => {
         contenedor.innerHTML += `
-            <button class="boton-registro" onclick="window.location.href='index.html?view=${index}'">
+            <button class="boton-registro" onclick="window.location.href='index.html?view=${reg.id}'">
                 ${reg.nombre}
             </button>
-
             <div class="opciones">
-                <button onclick="renombrar(${index})">✏ Renombrar</button>
-                <button onclick="eliminar(${index})">🗑 Eliminar</button>
+                <button onclick="renombrar('${reg.id}',${index})">✏ Renombrar</button>
+                <button onclick="eliminar('${reg.id}')">🗑 Eliminar</button>
                 <button onclick="exportarSimple(${index})">📋 Exportar</button>
                 <button onclick="exportarConDetalles(${index})">📄 Exportar con detalles</button>
             </div>
@@ -247,26 +300,25 @@ function renderLista(){
     });
 }
 
-function eliminar(index){
-  if(!confirm('¿Eliminar este registro? Esta acción no se puede deshacer.')) return;
-  let registros = obtenerRegistros();
-  registros.splice(index,1);
-  guardarRegistros(registros);
-  renderLista();
-}
-
-function renombrar(index){
-    let registros = obtenerRegistros();
-    let nuevo = prompt("Nuevo nombre:");
-    if(nuevo){
-        registros[index].nombre = nuevo;
-        guardarRegistros(registros);
+window.eliminar = async function(docId){
+    if(!confirm('¿Eliminar este registro? Esta acción no se puede deshacer.')) return;
+    try {
+        await deleteDoc(doc(db, "usuarios", currentUser.uid, "registros", docId));
+        registrosCache = registrosCache.filter(r => r.id !== docId);
         renderLista();
-    }
+    } catch(e){ alert("Error al eliminar: " + e.message); }
 }
 
-renderLista();
-
+window.renombrar = async function(docId, index){
+    let nuevo = prompt("Nuevo nombre:");
+    if(!nuevo) return;
+    try {
+        await updateDoc(doc(db, "usuarios", currentUser.uid, "registros", docId), {nombre: nuevo});
+        registrosCache[index].nombre = nuevo;
+        renderLista();
+    } catch(e){ alert("Error al renombrar: " + e.message); }
+}
+    
 </script>
 
 </body>
