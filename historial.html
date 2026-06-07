@@ -267,6 +267,7 @@ function _aplicarEstilos(ws, filaInicio, totalFilas){
 }
 
 window.exportarSimple = function(index){
+    const XLSX = window.XLSX;
     let r = registrosCache[index].datos;
     let nombre = registrosCache[index].nombre;
     let wb = XLSX.utils.book_new();
@@ -283,6 +284,7 @@ window.exportarSimple = function(index){
 }
 
 window.exportarConDetalles = function(index){
+    const XLSX = window.XLSX;
     let r = registrosCache[index].datos;
     let nombre = registrosCache[index].nombre;
     let wb = XLSX.utils.book_new();
@@ -299,7 +301,9 @@ window.exportarConDetalles = function(index){
     XLSX.utils.book_append_sheet(wb, ws, 'Datos');
     XLSX.writeFile(wb, nombre + '_detalles.xlsx');
 }
+
 window.exportarTodo = function(){
+    const XLSX = window.XLSX;
     if(registrosCache.length === 0){ alert('No hay registros.'); return; }
     let wb = XLSX.utils.book_new();
     let encabezados = ['Date','Time','Station','Repeat','Stopwatch Reading (s)','Anemometer Reading (feet)','Before Correction','Corrected','Vprom (fpm)','σ','CV','Large (m)','Height (m)','Area (m2)','Q (cfm)'];
