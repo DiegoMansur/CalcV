@@ -261,36 +261,75 @@ function _descargar(wb, nombre){
     URL.revokeObjectURL(url);
 }
 
+function _crearHoja(registros, conEncabezados){
+    const XLSX = window.XLSX;
+    const ws = {};
+    const merges = [];
+    
+    // Columnas: A=Date, B=Time, C=Station, D=Repeat, E=SW, F=AN, G=BC, H=C, I=Vprom, J=σ, K=CV, L=Large, M=Height, N=Area, O=Q
+    let filaActual = 0;
+    
+    if(conEncabezados){
+        const headers = ['Date','Time','Station','Repeat','Stopwatch Reading (s)','Anemometer Reading (feet)','Before Correction','Corrected','Vprom (fpm)','σ','CV','Large (m)','Height (m)','Area (m2)','Q (cfm)'];
+        headers.forEach((h, c) => {
+            const ref = XLSX.utils.encode_cell({r:0, c});
+            ws[ref] = {v: h, t: 's'};
+        });
+        filaActual = 1;
+    }
+    
+    registros.forEach(reg => {
+        const r = reg.datos;
+        const f = filaActual;
+        
+        // Fila 1
+        const fila1 = [r.fecha, r.hora, r.estacion, 1, parseFloat(r.sw1)||r.sw1, parseFloat(r.an1)||r.an1, parseFloat(r.bc1)||r.bc1, parseFloat(r.c1)||r.c1, parseFloat(r.vprom)||r.vprom, parseFloat(r.sigma)||r.sigma, parseFloat(r.cv)||r.cv, parseFloat(r.largo)||r.largo, parseFloat(r.altura)||r.altura, parseFloat(r.area)||r.area, parseFloat(r.q)||r.q];
+        // Fila 2
+        const fila2 = ['','', '', 2, parseFloat(r.sw2)||r.sw2, parseFloat(r.an2)||r.an2, parseFloat(r.bc2)||r.bc2, parseFloat(r.c2)||r.c2, '','','','','','',''];
+        // Fila 3
+        const fila3 = ['','', '', 3, parseFloat(r.sw3)||r.sw3, parseFloat(r.an3)||r.an3, parseFloat(r.bc3)||r.bc3, parseFloat(r.c3)||r.c3, '','','','','','',''];
+        
+        [fila1, fila2, fila3].forEach((fila, i) => {
+            fila.forEach((val, c) => {
+                const ref = XLSX.utils.encode_cell({r: f+i, c});
+                if(val !== '') ws[ref] = {v: val, t: typeof val === 'number' ? 'n' : 's'};
+            });
+        });
+        
+        // Merges para columnas combinadas: Date(0), Time(1), Station(2), Vprom(8), σ(9), CV(10), Large(11), Height(12), Area(13), Q(14)
+        [0,1,2,8,9,10,11,12,13,14].forEach(c => {
+            merges.push({s:{r:f, c}, e:{r:f+2, c}});
+        });
+        
+        filaActual += 4; // 3 filas + 1 vacía
+    });
+    
+    ws['!merges'] = merges;
+    ws['!ref'] = XLSX.utils.encode_range({s:{r:0,c:0}, e:{r:filaActual, c:14}});
+    
+    // Anchos de columna
+    ws['!cols'] = [
+        {wch:12},{wch:8},{wch:8},{wch:6},{wch:14},{wch:16},
+        {wch:14},{wch:12},{wch:10},{wch:8},{wch:8},{wch:8},{wch:9},{wch:9},{wch:12}
+    ];
+    
+    return ws;
+}
+
 window.exportarSimple = function(index){
     const XLSX = window.XLSX;
-    let r = registrosCache[index].datos;
     let nombre = registrosCache[index].nombre;
     let wb = XLSX.utils.book_new();
-    let data = [
-        [r.fecha, r.hora, r.estacion, 1, r.sw1, r.an1, r.bc1, r.c1, r.vprom, r.sigma, r.cv, r.largo, r.altura, r.area, r.q],
-        ['', '', '', 2, r.sw2, r.an2, r.bc2, r.c2, '', '', '', '', '', '', ''],
-        ['', '', '', 3, r.sw3, r.an3, r.bc3, r.c3, '', '', '', '', '', '', ''],
-        ['', '', '', '', '', '', '', '', '', '', '', '', '', '', '']
-    ];
-    let ws = XLSX.utils.aoa_to_sheet(data);
+    let ws = _crearHoja([registrosCache[index]], false);
     XLSX.utils.book_append_sheet(wb, ws, 'Datos');
     _descargar(wb, nombre + '.xlsx');
 }
 
 window.exportarConDetalles = function(index){
     const XLSX = window.XLSX;
-    let r = registrosCache[index].datos;
     let nombre = registrosCache[index].nombre;
     let wb = XLSX.utils.book_new();
-    let encabezados = ['Date','Time','Station','Repeat','Stopwatch Reading (s)','Anemometer Reading (feet)','Before Correction','Corrected','Vprom (fpm)','σ','CV','Large (m)','Height (m)','Area (m2)','Q (cfm)'];
-    let data = [
-        encabezados,
-        [r.fecha, r.hora, r.estacion, 1, r.sw1, r.an1, r.bc1, r.c1, r.vprom, r.sigma, r.cv, r.largo, r.altura, r.area, r.q],
-        ['', '', '', 2, r.sw2, r.an2, r.bc2, r.c2, '', '', '', '', '', '', ''],
-        ['', '', '', 3, r.sw3, r.an3, r.bc3, r.c3, '', '', '', '', '', '', ''],
-        ['', '', '', '', '', '', '', '', '', '', '', '', '', '', '']
-    ];
-    let ws = XLSX.utils.aoa_to_sheet(data);
+    let ws = _crearHoja([registrosCache[index]], true);
     XLSX.utils.book_append_sheet(wb, ws, 'Datos');
     _descargar(wb, nombre + '_detalles.xlsx');
 }
@@ -299,16 +338,7 @@ window.exportarTodo = function(){
     const XLSX = window.XLSX;
     if(registrosCache.length === 0){ alert('No hay registros.'); return; }
     let wb = XLSX.utils.book_new();
-    let encabezados = ['Date','Time','Station','Repeat','Stopwatch Reading (s)','Anemometer Reading (feet)','Before Correction','Corrected','Vprom (fpm)','σ','CV','Large (m)','Height (m)','Area (m2)','Q (cfm)'];
-    let data = [encabezados];
-    registrosCache.forEach((reg, i) => {
-        let r = reg.datos;
-        data.push([r.fecha, r.hora, r.estacion, 1, r.sw1, r.an1, r.bc1, r.c1, r.vprom, r.sigma, r.cv, r.largo, r.altura, r.area, r.q]);
-        data.push(['', '', '', 2, r.sw2, r.an2, r.bc2, r.c2, '', '', '', '', '', '', '']);
-        data.push(['', '', '', 3, r.sw3, r.an3, r.bc3, r.c3, '', '', '', '', '', '', '']);
-        data.push(['', '', '', '', '', '', '', '', '', '', '', '', '', '', '']);
-    });
-    let ws = XLSX.utils.aoa_to_sheet(data);
+    let ws = _crearHoja(registrosCache, true);
     XLSX.utils.book_append_sheet(wb, ws, 'Datos');
     _descargar(wb, 'registros_completos.xlsx');
 }
