@@ -129,6 +129,19 @@ button:hover{
     opacity:0.9;
 }
 
+.btn-header{
+    background:none;
+    border:none;
+    color:#333;
+    font-size:13px;
+    margin-top:0;
+    width:auto;
+    padding:4px 8px;
+    cursor:pointer;
+    -webkit-appearance:none;
+    appearance:none;
+}
+
 button:active{
     transform:scale(0.98);
 }
@@ -304,9 +317,9 @@ input[type="time"]::-webkit-clear-button {
     <div style="display:flex;align-items:center;gap:8px;">
         <div id="userInfo" style="display:none">
             <img id="userPhoto" src="" alt="">
-            <button id="btnLogout" onclick="logout()">Salir</button>
+            <button id="btnLogout" class="btn-header" onclick="logout()">Salir</button>
         </div>
-        <button onclick="window.location.href='historial.html'" style="background:none;border:1px solid #ddd;color:#666;font-size:13px;margin-top:0;width:auto;padding:4px 10px;border-radius:8px;">Historial</button>
+        <button class="btn-header" onclick="window.location.href='historial.html'">Historial</button>
     </div>
 </header>
 
