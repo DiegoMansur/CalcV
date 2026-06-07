@@ -1,4 +1,4 @@
-const CACHE_NAME = "velocity-app-v41;
+const CACHE_NAME = "velocity-app-v42;
 
 const urlsToCache = [
   "./",
@@ -32,7 +32,11 @@ self.addEventListener("activate", event => {
 });
 
 self.addEventListener("fetch", event => {
-  if(event.request.url.startsWith('blob:') || 
+  const url = event.request.url;
+  if(url.includes('firestore.googleapis.com') ||
+     url.includes('firebase') ||
+     url.startsWith('blob:') ||
+     url.startsWith('chrome-extension') ||
      event.request.method !== 'GET'){
     return;
   }
