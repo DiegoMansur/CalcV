@@ -261,19 +261,58 @@ input[type="time"]::-webkit-clear-button {
   padding: 8px 8px !important;
   overflow: hidden !important;
 }
+
+#loginOverlay{
+    position:fixed;inset:0;background:rgba(0,0,0,0.5);
+    display:flex;align-items:center;justify-content:center;z-index:9999;
+}
+#loginBox{
+    background:white;border-radius:20px;padding:30px 25px;
+    text-align:center;max-width:320px;width:90%;
+    box-shadow:0 20px 60px rgba(0,0,0,0.3);
+}
+#loginBox h2{margin:0 0 8px 0;font-size:20px;}
+#loginBox p{color:#666;font-size:14px;margin:0 0 20px 0;}
+#btnGoogle{
+    display:flex;align-items:center;justify-content:center;gap:10px;
+    width:100%;padding:12px;border:1px solid #ddd;border-radius:12px;
+    background:white;font-size:15px;font-weight:500;cursor:pointer;margin-top:0;
+}
+#btnGoogle img{width:20px;height:20px;}
+#syncStatus{font-size:11px;color:#999;text-align:center;padding:5px 0;}
+#userInfo{display:flex;align-items:center;gap:8px;font-size:13px;}
+#userInfo img{width:28px;height:28px;border-radius:50%;}
+#btnLogout{background:none;border:none;font-size:12px;color:#999;cursor:pointer;padding:0;margin:0;width:auto;margin-top:0;}
 </style>
 </head>
 
 <body>
 
+<div id="loginOverlay">
+  <div id="loginBox">
+    <h2>CalculadoraV</h2>
+    <p>Inicia sesión para sincronizar tus datos.</p>
+    <button id="btnGoogle" onclick="loginGoogle()">
+      <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="Google">
+      Continuar con Google
+    </button>
+  </div>
+</div>
+
 <header class="app-header">
     <div class="logo">CalculadoraV</div>
+    <div id="userInfo" style="display:none">
+        <img id="userPhoto" src="" alt="">
+        <button id="btnLogout" onclick="logout()">Salir</button>
+    </div>
     <button class="history-btn" onclick="window.location.href='historial.html'">
         <svg viewBox="0 0 24 24" fill="black">
             <path d="M13 3a9 9 0 1 0 8.95 10H20a7 7 0 1 1-2.05-4.95L16 10h6V4l-2.05 2.05A8.96 8.96 0 0 0 13 3zm-1 5h2v6h-6v-2h4z"/>
         </svg>
     </button>
 </header>
+
+<div id="syncStatus">Conectando...</div>
 
 <div class="container">
 
@@ -374,7 +413,53 @@ input[type="time"]::-webkit-clear-button {
 </div>
 </div>
 
-2<script>
+<script type="module">
+
+import { initializeApp } from "https://www.gstatic.com/firebasejs/12.14.0/firebase-app.js";
+import { getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged }
+    from "https://www.gstatic.com/firebasejs/12.14.0/firebase-auth.js";
+import { getFirestore, collection, addDoc, doc, getDoc, enableIndexedDbPersistence }
+    from "https://www.gstatic.com/firebasejs/12.14.0/firebase-firestore.js";
+
+const firebaseConfig = {
+    apiKey: "AIzaSyAFwMlGgKcJGOcFAHlGXC-lR-zMpSJpLiM",
+    authDomain: "calcv-5990e.firebaseapp.com",
+    projectId: "calcv-5990e",
+    storageBucket: "calcv-5990e.firebasestorage.app",
+    messagingSenderId: "986351043016",
+    appId: "1:986351043016:web:79386c3a1205fc1ef880fd"
+};
+
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db = getFirestore(app);
+enableIndexedDbPersistence(db).catch(()=>{});
+
+const provider = new GoogleAuthProvider();
+let currentUser = null;
+
+window.loginGoogle = async function(){
+    try { await signInWithPopup(auth, provider); }
+    catch(e){ alert("Error: " + e.message); }
+};
+
+window.logout = async function(){ await signOut(auth); };
+
+onAuthStateChanged(auth, user => {
+    if(user){
+        currentUser = user;
+        document.getElementById('loginOverlay').style.display = 'none';
+        document.getElementById('userInfo').style.display = 'flex';
+        document.getElementById('userPhoto').src = user.photoURL || '';
+        document.getElementById('syncStatus').textContent = '✅ ' + user.email;
+    } else {
+        currentUser = null;
+        document.getElementById('loginOverlay').style.display = 'flex';
+        document.getElementById('userInfo').style.display = 'none';
+        document.getElementById('syncStatus').textContent = 'Sin sesión';
+    }
+});
+    
 const tablaCorreccion = [
   {min:30,max:50,corr:14},{min:50,max:70,corr:15},{min:70,max:90,corr:15},
   {min:90,max:100,corr:15},{min:100,max:200,corr:15},{min:200,max:300,corr:15},
@@ -449,54 +534,44 @@ if("serviceWorker" in navigator){
   navigator.serviceWorker.register("service-worker.js");
 }
 
-function guardarRegistro(){
+async function guardarRegistro(){
+    if(!currentUser){ alert("Debes iniciar sesión primero."); return; }
+    if(!vprom.textContent){ alert("Primero debes calcular los datos."); return; }
 
-  let registros = JSON.parse(localStorage.getItem("registrosApp")) || [];
+    let nombreEstacion = estacion.value.trim() || "Sin estación";
 
-  if(!vprom.textContent){
-    alert("Primero debes calcular los datos.");
-    return;
-  }
+    let nuevo = {
+        nombre: nombreEstacion,
+        timestamp: Date.now(),
+        datos:{
+            fecha: fecha.value, hora: hora.value, estacion: estacion.value,
+            sw1: sw1.value, sw2: sw2.value, sw3: sw3.value,
+            an1: an1.value, an2: an2.value, an3: an3.value,
+            bc1: bc1.textContent, bc2: bc2.textContent, bc3: bc3.textContent,
+            c1: c1.textContent, c2: c2.textContent, c3: c3.textContent,
+            vprom: vprom.textContent, sigma: sigma.textContent, cv: cv.textContent,
+            largo: largo.value, altura: altura.value, area: area.textContent, q: q.textContent
+        }
+    };
 
-  let nombreEstacion = estacion.value.trim();
-
-  if(!nombreEstacion){
-    nombreEstacion = "Sin estación";
-  }
-
-  let nuevo = {
-    nombre: nombreEstacion,
-    datos:{
-      fecha: fecha.value,
-      hora: hora.value,
-      estacion: estacion.value,
-
-      sw1: sw1.value,
-      sw2: sw2.value,
-      sw3: sw3.value,
-
-      an1: an1.value,
-      an2: an2.value,
-      an3: an3.value,
-
-      bc1: bc1.textContent,
-      bc2: bc2.textContent,
-      bc3: bc3.textContent,
-
-      c1: c1.textContent,
-      c2: c2.textContent,
-      c3: c3.textContent,
-
-      vprom: vprom.textContent,
-      sigma: sigma.textContent,
-      cv: cv.textContent,
-
-      largo: largo.value,
-      altura: altura.value,
-      area: area.textContent,
-      q: q.textContent
+    try {
+        document.getElementById('syncStatus').textContent = '💾 Guardando...';
+        await addDoc(collection(db, "usuarios", currentUser.uid, "registros"), nuevo);
+        document.getElementById('syncStatus').textContent = '✅ Guardado y sincronizado';
+        alert("Guardado correctamente ✅");
+    } catch(e) {
+        document.getElementById('syncStatus').textContent = '⚠️ Sin conexión — guardado local';
+        alert("Guardado localmente. Se sincronizará cuando haya internet. ✅");
     }
-  };
+
+    document.querySelectorAll('input').forEach(el => el.value = '');
+    ['bc1','bc2','bc3','c1','c2','c3','vprom','sigma','cv','area','q']
+        .forEach(id => document.getElementById(id).textContent = '');
+    const hoy = new Date();
+    document.getElementById('fecha').value = hoy.getFullYear() + '-' +
+        String(hoy.getMonth()+1).padStart(2,'0') + '-' + String(hoy.getDate()).padStart(2,'0');
+    document.getElementById('hora').value = hoy.toTimeString().slice(0,5);
+}
 
   registros.push(nuevo);
   localStorage.setItem("registrosApp", JSON.stringify(registros));
@@ -523,78 +598,37 @@ function obtenerParametro(nombre){
   return urlParams.get(nombre);
 }
 
-let viewIndex = obtenerParametro("view");
-
-if(viewIndex !== null){
-
-  let registros = JSON.parse(localStorage.getItem("registrosApp")) || [];
-  let registro = registros[viewIndex];
-
-  if(registro){
-
-    let d = registro.datos;
-
-    // Cambiar título del header
-    document.querySelector(".logo").textContent = registro.nombre + " (Modo Vista)";
-    document.querySelector(".logo").classList.add("slide-in");
-
-    // Llenar datos
-    fecha.value = d.fecha;
-    hora.value = d.hora;
-    estacion.value = d.estacion;
-
-    sw1.value = d.sw1;
-    sw2.value = d.sw2;
-    sw3.value = d.sw3;
-
-    an1.value = d.an1;
-    an2.value = d.an2;
-    an3.value = d.an3;
-
-    bc1.textContent = d.bc1;
-    bc2.textContent = d.bc2;
-    bc3.textContent = d.bc3;
-
-    c1.textContent = d.c1;
-    c2.textContent = d.c2;
-    c3.textContent = d.c3;
-
-    vprom.textContent = d.vprom;
-    sigma.textContent = d.sigma;
-    cv.textContent = d.cv;
-
-    largo.value = d.largo;
-    altura.value = d.altura;
-    area.textContent = d.area;
-    q.textContent = d.q;
-
-    // Desactivar inputs
-    document.querySelectorAll("input").forEach(el=>{
-      el.disabled = true;
-      el.style.background = "#f3f3f3";
-      el.style.cursor = "default";
+let viewId = obtenerParametro("view");
+if(viewId !== null){
+    onAuthStateChanged(auth, async user => {
+        if(!user) return;
+        let snap = await getDoc(doc(db, "usuarios", user.uid, "registros", viewId));
+        if(snap.exists()){
+            let registro = snap.data();
+            let d = registro.datos;
+            document.querySelector(".logo").textContent = registro.nombre + " (Modo Vista)";
+            document.querySelector(".logo").classList.add("slide-in");
+            fecha.value=d.fecha; hora.value=d.hora; estacion.value=d.estacion;
+            sw1.value=d.sw1; sw2.value=d.sw2; sw3.value=d.sw3;
+            an1.value=d.an1; an2.value=d.an2; an3.value=d.an3;
+            bc1.textContent=d.bc1; bc2.textContent=d.bc2; bc3.textContent=d.bc3;
+            c1.textContent=d.c1; c2.textContent=d.c2; c3.textContent=d.c3;
+            vprom.textContent=d.vprom; sigma.textContent=d.sigma; cv.textContent=d.cv;
+            largo.value=d.largo; altura.value=d.altura; area.textContent=d.area; q.textContent=d.q;
+            document.querySelectorAll("input").forEach(el=>{
+                el.disabled=true; el.style.background="#f3f3f3"; el.style.cursor="default";
+            });
+            let btnGuardar = document.querySelector("button[onclick='guardarRegistro()']");
+            if(btnGuardar) btnGuardar.style.display="none";
+            document.querySelectorAll(".card").forEach(card=>card.classList.add("fade-in"));
+            let volver = document.createElement("button");
+            volver.textContent = "Volver al Historial";
+            volver.style.marginTop = "15px";
+            volver.classList.add("fade-in");
+            volver.onclick = ()=> window.location.href="historial.html";
+            document.querySelector(".card:last-child").appendChild(volver);
+        }
     });
-
-    // Ocultar botón Guardar
-    let btnGuardar = document.querySelector("button[onclick='guardarRegistro()']");
-    if(btnGuardar){
-      btnGuardar.style.display = "none";
-    }
-
-    // Animar tarjetas
-    document.querySelectorAll(".card").forEach(card=>{
-      card.classList.add("fade-in");
-    });
-
-    // Botón volver
-    let volver = document.createElement("button");
-    volver.textContent = "Volver al Historial";
-    volver.style.marginTop = "15px";
-    volver.classList.add("fade-in");
-    volver.onclick = ()=> window.location.href="historial.html";
-
-    document.querySelector(".card:last-child").appendChild(volver);
-  }
 }
 
 // Busca esto en tu script y asegúralo así:
