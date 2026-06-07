@@ -436,13 +436,19 @@ enableIndexedDbPersistence(db).catch(()=>{});
 const provider = new GoogleAuthProvider();
 let currentUser = null;
 
+provider.setCustomParameters({prompt: 'select_account'});
+    
 window.loginGoogle = async function(){
-    await signInWithRedirect(auth, provider);
+    try {
+        await signInWithPopup(auth, provider);
+    } catch(e) {
+        if(e.code === 'auth/popup-blocked' || e.code === 'auth/cancelled-popup-request'){
+            await signInWithRedirect(auth, provider);
+        } else {
+            alert("Error: " + e.message);
+        }
+    }
 };
-
-getRedirectResult(auth).catch(e => {
-    if(e.code !== 'auth/null-user') console.error(e);
-});
 
 window.logout = async function(){ await signOut(auth); };
 
