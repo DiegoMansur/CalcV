@@ -1,4 +1,4 @@
-const CACHE_NAME = "velocity-app-v26";
+const CACHE_NAME = "velocity-app-v27";
 
 const urlsToCache = [
   "./",
