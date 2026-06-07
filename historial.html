@@ -213,7 +213,7 @@ onAuthStateChanged(auth, async user => {
         document.getElementById('loginOverlay').style.display = 'flex';
         document.getElementById('userInfo').style.display = 'none';
         document.getElementById('syncStatus').textContent = 'Sin sesión';
-        document.getElementById('contenido').innerHTML = '<div class="vacio">Inicia sesión para ver tus registros.</div>';
+        document.getElementById('contenido') && (document.getElementById('contenido').innerHTML = '<div class="vacio">Inicia sesión para ver tus registros.</div>');
     }
 });
 
