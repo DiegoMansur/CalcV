@@ -473,6 +473,7 @@ onAuthStateChanged(auth, user => {
         document.getElementById('loginOverlay').style.display = 'flex';
         document.getElementById('userInfo').style.display = 'none';
         document.getElementById('syncStatus').textContent = 'Sin sesión';
+        document.getElementById('contenido') && (document.getElementById('contenido').innerHTML = '<div class="vacio">Inicia sesión para ver tus registros.</div>');
     }
 });
     
