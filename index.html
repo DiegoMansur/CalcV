@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+    <!DOCTYPE html>
 <html lang="es">
 <head>
 <meta charset="UTF-8">
@@ -125,21 +125,16 @@ button{
     transition:0.2s;
 }
 
+.btn-nav{
+    all:revert;
+    cursor:pointer;
+    font-family:inherit;
+}
+
 button:hover{
     opacity:0.9;
 }
-
-.app-header button{
-    background:none !important;
-    border:none !important;
-    color:#333 !important;
-    font-size:13px !important;
-    margin-top:0 !important;
-    width:auto !important;
-    padding:4px 8px !important;
-    font-weight:normal !important;
-}
-
+ 
 button:active{
     transform:scale(0.98);
 }
@@ -317,7 +312,7 @@ input[type="time"]::-webkit-clear-button {
             <img id="userPhoto" src="" alt="">
             <button id="btnLogout" onclick="logout()">Salir</button>
         </div>
-        <button onclick="window.location.href='historial.html'">Historial</button>
+        <button class="btn-nav" onclick="window.location.href='historial.html'">Historial</button>
     </div>
 </header>
 
