@@ -573,7 +573,7 @@ window.guardarRegistro = async function(){
     try {
         document.getElementById('syncStatus').textContent = '💾 Guardando...';
         await addDoc(collection(db, "usuarios", currentUser.uid, "registros"), nuevo);
-        document.getElementById('syncStatus').textContent = '✅ Guardado y sincronizado';
+        document.getElementById('syncStatus').textContent = navigator.onLine ? '✅ Guardado y sincronizado' : '📴 Guardado sin conexión — se sincronizará';
         alert("Guardado correctamente ✅");
     } catch(e) {
         document.getElementById('syncStatus').textContent = '⚠️ Sin conexión — guardado local';
