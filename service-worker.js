@@ -1,4 +1,4 @@
-const CACHE_NAME = "velocity-app-v40;
+const CACHE_NAME = "velocity-app-v41;
 
 const urlsToCache = [
   "./",
@@ -32,6 +32,10 @@ self.addEventListener("activate", event => {
 });
 
 self.addEventListener("fetch", event => {
+  if(event.request.url.startsWith('blob:') || 
+     event.request.method !== 'GET'){
+    return;
+  }
   event.respondWith(
     caches.match(event.request)
       .then(response => {
