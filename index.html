@@ -276,7 +276,7 @@ input[type="time"]::-webkit-clear-button {
 #btnGoogle{
     display:flex;align-items:center;justify-content:center;gap:10px;
     width:100%;padding:12px;border:1px solid #ddd;border-radius:12px;
-    background:white;font-size:15px;font-weight:500;cursor:pointer;margin-top:0;
+    background:white;font-size:15px;font-weight:500;cursor:pointer;margin-top:0;color:#333;
 }
 #btnGoogle img{width:20px;height:20px;}
 #syncStatus{font-size:11px;color:#999;text-align:center;padding:5px 0;}
@@ -300,16 +300,15 @@ input[type="time"]::-webkit-clear-button {
 </div>
 
 <header class="app-header">
-    <div class="logo">CalculadoraV</div>
-    <div id="userInfo" style="display:none">
-        <img id="userPhoto" src="" alt="">
-        <button id="btnLogout" onclick="logout()">Salir</button>
+    <<div class="logo">CalculadoraV</div>
+    <div style="display:flex;align-items:center;gap:8px;">
+        <div id="userInfo" style="display:none">
+            <img id="userPhoto" src="" alt="">
+            <button id="btnLogout" onclick="logout()">Salir</button>
+        </div>
+        <button onclick="window.location.href='historial.html'" style="background:none;border:1px solid #ddd;color:#333;font-size:13px;margin-top:0;width:auto;padding:6px 12px;border-radius:20px;">Historial</button>
     </div>
-    <button class="history-btn" onclick="window.location.href='historial.html'">
-        <svg viewBox="0 0 24 24" fill="black">
-            <path d="M13 3a9 9 0 1 0 8.95 10H20a7 7 0 1 1-2.05-4.95L16 10h6V4l-2.05 2.05A8.96 8.96 0 0 0 13 3zm-1 5h2v6h-6v-2h4z"/>
-        </svg>
-    </button>
+    <button onclick="window.location.href='historial.html'" style="background:none;border:1px solid #ddd;color:#333;font-size:13px;margin-top:0;width:auto;padding:6px 12px;border-radius:20px;">Historial</button>
 </header>
 
 <div id="syncStatus">Conectando...</div>
