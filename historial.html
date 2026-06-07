@@ -159,7 +159,7 @@ td {
 <script type="module">
 
 import { initializeApp } from "https://www.gstatic.com/firebasejs/12.14.0/firebase-app.js";
-import { getAuth, GoogleAuthProvider, signInWithRedirect, getRedirectResult, signOut, onAuthStateChanged }
+import { getAuth, GoogleAuthProvider, signInWithPopup, signInWithRedirect, getRedirectResult, signOut, onAuthStateChanged }
     from "https://www.gstatic.com/firebasejs/12.14.0/firebase-auth.js";
 import { getFirestore, collection, getDocs, doc, deleteDoc, updateDoc, query, orderBy, enableIndexedDbPersistence }
     from "https://www.gstatic.com/firebasejs/12.14.0/firebase-firestore.js";
@@ -273,7 +273,6 @@ window.exportarSimple = function(index){
         ['', '', '', '', '', '', '', '', '', '', '', '', '', '', '']
     ];
     let ws = XLSX.utils.aoa_to_sheet(data);
-    _aplicarEstilos(ws, 0, data.length);
     XLSX.utils.book_append_sheet(wb, ws, 'Datos');
     _descargar(wb, nombre + '.xlsx');
 }
@@ -292,7 +291,6 @@ window.exportarConDetalles = function(index){
         ['', '', '', '', '', '', '', '', '', '', '', '', '', '', '']
     ];
     let ws = XLSX.utils.aoa_to_sheet(data);
-    _aplicarEstilos(ws, 1, data.length);
     XLSX.utils.book_append_sheet(wb, ws, 'Datos');
     _descargar(wb, nombre + '_detalles.xlsx');
 }
@@ -311,7 +309,6 @@ window.exportarTodo = function(){
         data.push(['', '', '', '', '', '', '', '', '', '', '', '', '', '', '']);
     });
     let ws = XLSX.utils.aoa_to_sheet(data);
-    _aplicarEstilos(ws, 1, data.length);
     XLSX.utils.book_append_sheet(wb, ws, 'Datos');
     _descargar(wb, 'registros_completos.xlsx');
 }
