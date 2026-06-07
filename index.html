@@ -648,22 +648,19 @@ document.querySelectorAll("input[type='number']").forEach(el => {
   document.getElementById('hora').value = hora;
 })();
 
-// Cronómetro por casilla
 (function(){
   [1,2,3].forEach(i => {
     let el = document.getElementById('sw'+i);
     let running = false;
     let startTime = null;
     let interval = null;
-    let lastClick = 0;
+    let lastTap = 0;
 
-    el.addEventListener('touchend', function(e){
-      e.preventDefault();
+    function manejar(esTouch){
       let now = Date.now();
-      let gap = now - lastClick;
-      lastClick = now;
+      let gap = now - lastTap;
+      lastTap = now;
 
-      // Doble click = modo manual
       if(gap < 500){
         clearInterval(interval);
         running = false;
@@ -674,7 +671,6 @@ document.querySelectorAll("input[type='number']").forEach(el => {
       }
 
       if(!running){
-        // Iniciar
         el.setAttribute('readonly', true);
         startTime = Date.now();
         running = true;
@@ -684,13 +680,22 @@ document.querySelectorAll("input[type='number']").forEach(el => {
           calcular();
         }, 50);
       } else {
-        // Parar
         clearInterval(interval);
         running = false;
         let seg = (Date.now() - startTime) / 1000;
         el.value = seg.toFixed(2);
         calcular();
       }
+    }
+
+    el.addEventListener('touchend', function(e){
+      e.preventDefault();
+      manejar(true);
+    });
+
+    el.addEventListener('click', function(e){
+      if(e.pointerType === 'touch') return;
+      manejar(false);
     });
   });
 })();
