@@ -158,7 +158,7 @@ td {
 <script type="module">
 
 import { initializeApp } from "https://www.gstatic.com/firebasejs/12.14.0/firebase-app.js";
-import { getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged }
+import { getAuth, GoogleAuthProvider, signInWithRedirect, getRedirectResult, signOut, onAuthStateChanged }
     from "https://www.gstatic.com/firebasejs/12.14.0/firebase-auth.js";
 import { getFirestore, collection, getDocs, doc, deleteDoc, updateDoc, query, orderBy, enableIndexedDbPersistence }
     from "https://www.gstatic.com/firebasejs/12.14.0/firebase-firestore.js";
@@ -182,9 +182,12 @@ let currentUser = null;
 let registrosCache = [];
 
 window.loginGoogle = async function(){
-    try { await signInWithPopup(auth, provider); }
-    catch(e){ alert("Error: " + e.message); }
+    await signInWithRedirect(auth, provider);
 };
+
+getRedirectResult(auth).catch(e => {
+    if(e.code !== 'auth/null-user') console.error(e);
+});
 window.logout = async function(){ await signOut(auth); };
 
 onAuthStateChanged(auth, async user => {
