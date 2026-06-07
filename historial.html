@@ -262,58 +262,86 @@ function _descargar(wb, nombre){
     URL.revokeObjectURL(url);
 }
 
+function _celda(v, bold){
+    let t = typeof v === 'number' ? 'n' : 's';
+    let c = {v: v, t: t};
+    if(bold) c.s = {font:{bold:true}, alignment:{horizontal:'center',vertical:'center',wrapText:true}};
+    else c.s = {alignment:{horizontal:'center',vertical:'center',wrapText:true}};
+    return c;
+}
+
 function _crearHoja(registros, conEncabezados){
     const XLSX = window.XLSX;
     const ws = {};
     const merges = [];
-    
-    // Columnas: A=Date, B=Time, C=Station, D=Repeat, E=SW, F=AN, G=BC, H=C, I=Vprom, J=σ, K=CV, L=Large, M=Height, N=Area, O=Q
-    let filaActual = 0;
-    
+    let f = 0;
+
     if(conEncabezados){
-        const headers = ['Date','Time','Station','Repeat','Stopwatch Reading (s)','Anemometer Reading (feet)','Before Correction','Corrected','Vprom (fpm)','σ','CV','Large (m)','Height (m)','Area (m2)','Q (cfm)'];
+        // Fila 1: "Velocity (fpm)" sobre G y H (cols 6 y 7), col vacía en E(4)
+        // Cols: A=Date,B=Time,C=Station,D=Repeat,E=SW,F=AN, G(vacio), H=BC,I=Corrected,J=Vprom,K=σ,L=CV,M=Large,N=Height,O=Area,P=Q
+        
+        // Fila 0: encabezado Velocity (fpm) sobre H e I
+        ws[XLSX.utils.encode_cell({r:0,c:7})] = _celda('Velocity (fpm)', true);
+        merges.push({s:{r:0,c:7}, e:{r:0,c:8}});
+
+        // Fila 1: encabezados de columnas
+        const headers = [
+            'Date','Time','Station','Repeat',
+            'Stopwatch Reading (s)','Anemometer Reading (feet)',
+            '', // columna vacía separadora
+            'Before Correction','Corrected',
+            'Vprom (fpm)','σ','CV','Large (m)','Height (m)','Area (m2)','Q (cfm)'
+        ];
         headers.forEach((h, c) => {
-            const ref = XLSX.utils.encode_cell({r:0, c});
-            ws[ref] = {v: h, t: 's'};
+            if(h !== '') ws[XLSX.utils.encode_cell({r:1,c})] = _celda(h, true);
         });
-        filaActual = 1;
+
+        // Merge encabezados fila 1 que también abarcan fila 0 (los que no tienen Velocity arriba)
+        [0,1,2,3,4,5,9,10,11,12,13,14,15].forEach(c => {
+            merges.push({s:{r:0,c}, e:{r:1,c}});
+        });
+
+        f = 2;
     }
-    
+
     registros.forEach(reg => {
         const r = reg.datos;
-        const f = filaActual;
-        
-        // Fila 1
-        const fila1 = [r.fecha, r.hora, r.estacion, 1, parseFloat(r.sw1)||r.sw1, parseFloat(r.an1)||r.an1, parseFloat(r.bc1)||r.bc1, parseFloat(r.c1)||r.c1, parseFloat(r.vprom)||r.vprom, parseFloat(r.sigma)||r.sigma, parseFloat(r.cv)||r.cv, parseFloat(r.largo)||r.largo, parseFloat(r.altura)||r.altura, parseFloat(r.area)||r.area, parseFloat(r.q)||r.q];
-        // Fila 2
-        const fila2 = ['','', '', 2, parseFloat(r.sw2)||r.sw2, parseFloat(r.an2)||r.an2, parseFloat(r.bc2)||r.bc2, parseFloat(r.c2)||r.c2, '','','','','','',''];
-        // Fila 3
-        const fila3 = ['','', '', 3, parseFloat(r.sw3)||r.sw3, parseFloat(r.an3)||r.an3, parseFloat(r.bc3)||r.bc3, parseFloat(r.c3)||r.c3, '','','','','','',''];
-        
-        [fila1, fila2, fila3].forEach((fila, i) => {
+        const fBase = f;
+
+        const filas = [
+            [r.fecha, r.hora, r.estacion, 1, parseFloat(r.sw1)||0, parseFloat(r.an1)||0, '', parseFloat(r.bc1)||0, parseFloat(r.c1)||0, parseFloat(r.vprom)||0, parseFloat(r.sigma)||0, parseFloat(r.cv)||0, parseFloat(r.largo)||0, parseFloat(r.altura)||0, parseFloat(r.area)||0, parseFloat(r.q)||0],
+            ['','','', 2, parseFloat(r.sw2)||0, parseFloat(r.an2)||0, '', parseFloat(r.bc2)||0, parseFloat(r.c2)||0, '','','','','','',''],
+            ['','','', 3, parseFloat(r.sw3)||0, parseFloat(r.an3)||0, '', parseFloat(r.bc3)||0, parseFloat(r.c3)||0, '','','','','','',''],
+        ];
+
+        filas.forEach((fila, i) => {
             fila.forEach((val, c) => {
-                const ref = XLSX.utils.encode_cell({r: f+i, c});
-                if(val !== '') ws[ref] = {v: val, t: typeof val === 'number' ? 'n' : 's'};
+                if(val !== '') {
+                    ws[XLSX.utils.encode_cell({r: fBase+i, c})] = _celda(typeof val === 'string' ? val : Number(val), false);
+                }
             });
         });
-        
-        // Merges para columnas combinadas: Date(0), Time(1), Station(2), Vprom(8), σ(9), CV(10), Large(11), Height(12), Area(13), Q(14)
-        [0,1,2,8,9,10,11,12,13,14].forEach(c => {
-            merges.push({s:{r:f, c}, e:{r:f+2, c}});
+
+        // Merge celdas combinadas: Date(0),Time(1),Station(2),Vprom(9),σ(10),CV(11),Large(12),Height(13),Area(14),Q(15)
+        [0,1,2,9,10,11,12,13,14,15].forEach(c => {
+            merges.push({s:{r:fBase,c}, e:{r:fBase+2,c}});
         });
-        
-        filaActual += 4; // 3 filas + 1 vacía
+
+        f += 4; // 3 filas datos + 1 vacía
     });
-    
+
     ws['!merges'] = merges;
-    ws['!ref'] = XLSX.utils.encode_range({s:{r:0,c:0}, e:{r:filaActual, c:14}});
-    
-    // Anchos de columna
+    ws['!ref'] = XLSX.utils.encode_range({s:{r:0,c:0}, e:{r:f, c:15}});
     ws['!cols'] = [
-        {wch:12},{wch:8},{wch:8},{wch:6},{wch:14},{wch:16},
-        {wch:14},{wch:12},{wch:10},{wch:8},{wch:8},{wch:8},{wch:9},{wch:9},{wch:12}
+        {wch:12},{wch:8},{wch:10},{wch:7},
+        {wch:16},{wch:18},
+        {wch:2}, // col vacía separadora
+        {wch:16},{wch:12},
+        {wch:11},{wch:8},{wch:8},{wch:9},{wch:10},{wch:10},{wch:13}
     ];
-    
+    ws['!rows'] = [];
+    for(let i = 0; i < f; i++) ws['!rows'][i] = {hpt: 30};
+
     return ws;
 }
 
