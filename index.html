@@ -306,7 +306,7 @@ input[type="time"]::-webkit-clear-button {
             <img id="userPhoto" src="" alt="">
             <button id="btnLogout" onclick="logout()">Salir</button>
         </div>
-        <button onclick="window.location.href='historial.html'" style="background:none;border:none;color:#333;font-size:13px;margin-top:0;width:auto;padding:4px;">Historial</button>
+        <button onclick="window.location.href='historial.html'" style="background:none;border:1px solid #ddd;color:#666;font-size:13px;margin-top:0;width:auto;padding:4px 10px;border-radius:8px;">Historial</button>
     </div>
 </header>
 
@@ -414,7 +414,7 @@ input[type="time"]::-webkit-clear-button {
 <script type="module">
 
 import { initializeApp } from "https://www.gstatic.com/firebasejs/12.14.0/firebase-app.js";
-import { getAuth, GoogleAuthProvider, signInWithRedirect, getRedirectResult, signOut, onAuthStateChanged }
+import { getAuth, GoogleAuthProvider, signInWithPopup, signInWithRedirect, getRedirectResult, signOut, onAuthStateChanged }
     from "https://www.gstatic.com/firebasejs/12.14.0/firebase-auth.js";
 import { getFirestore, collection, addDoc, doc, getDoc, enableIndexedDbPersistence }
     from "https://www.gstatic.com/firebasejs/12.14.0/firebase-firestore.js";
