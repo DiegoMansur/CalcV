@@ -194,8 +194,11 @@ window.loginGoogle = async function(){
         }
     }
 };
-    
-window.logout = async function(){ await signOut(auth); };
+
+window.logout = async function(){
+    if(!confirm('¿Cerrar sesión?')) return;
+    await signOut(auth);
+};
 
 onAuthStateChanged(auth, async user => {
     if(user){
