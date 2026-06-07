@@ -247,23 +247,18 @@ function copiar(texto){
     });
 }
 
-function _aplicarEstilos(ws, filaInicio, totalFilas){
-    let amarillo = {fill:{patternType:'solid', fgColor:{rgb:'FFFDE7'}}};
-    let blanco = {fill:{patternType:'solid', fgColor:{rgb:'FFFFFF'}}, font:{bold:true}};
-    let cols = ['A','B','C','D','E','F','G','H','I','J','K','L','M','N','O'];
-    
-    for(let f = filaInicio; f < totalFilas; f++){
-        cols.forEach(c => {
-            let cell = ws[c+(f+1)];
-            if(cell){
-                if(f === 0 && filaInicio === 1){
-                    cell.s = blanco;
-                } else {
-                    cell.s = amarillo;
-                }
-            }
-        });
-    }
+function _descargar(wb, nombre){
+    const XLSX = window.XLSX;
+    const u8 = XLSX.write(wb, {bookType:'xlsx', type:'array'});
+    const blob = new Blob([u8], {type:'application/octet-stream'});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = nombre;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
 }
 
 window.exportarSimple = function(index){
@@ -280,7 +275,7 @@ window.exportarSimple = function(index){
     let ws = XLSX.utils.aoa_to_sheet(data);
     _aplicarEstilos(ws, 0, data.length);
     XLSX.utils.book_append_sheet(wb, ws, 'Datos');
-    XLSX.writeFile(wb, nombre + '.xlsx');
+    _descargar(wb, nombre + '.xlsx');
 }
 
 window.exportarConDetalles = function(index){
@@ -299,7 +294,7 @@ window.exportarConDetalles = function(index){
     let ws = XLSX.utils.aoa_to_sheet(data);
     _aplicarEstilos(ws, 1, data.length);
     XLSX.utils.book_append_sheet(wb, ws, 'Datos');
-    XLSX.writeFile(wb, nombre + '_detalles.xlsx');
+    _descargar(wb, nombre + '_detalles.xlsx');
 }
 
 window.exportarTodo = function(){
@@ -318,7 +313,7 @@ window.exportarTodo = function(){
     let ws = XLSX.utils.aoa_to_sheet(data);
     _aplicarEstilos(ws, 1, data.length);
     XLSX.utils.book_append_sheet(wb, ws, 'Datos');
-    XLSX.writeFile(wb, 'registros_completos.xlsx');
+    _descargar(wb, 'registros_completos.xlsx');
 }
 
 function renderLista(){
