@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
 <meta charset="UTF-8">
-<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/exceljs/4.3.0/exceljs.min.js"></script>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Historial</title>
 
@@ -248,10 +248,9 @@ function copiar(texto){
     });
 }
 
-function _descargar(wb, nombre){
-    const XLSX = window.XLSX;
-    const u8 = XLSX.write(wb, {bookType:'xlsx', type:'array'});
-    const blob = new Blob([u8], {type:'application/octet-stream'});
+async function _descargar(wb, nombre){
+    const buf = await wb.xlsx.writeBuffer();
+    const blob = new Blob([buf], {type:'application/octet-stream'});
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
@@ -262,114 +261,152 @@ function _descargar(wb, nombre){
     URL.revokeObjectURL(url);
 }
 
-function _celda(v, bold){
-    let t = typeof v === 'number' ? 'n' : 's';
-    let c = {v: v, t: t};
-    if(bold) c.s = {font:{bold:true}, alignment:{horizontal:'center',vertical:'center',wrapText:true}};
-    else c.s = {alignment:{horizontal:'center',vertical:'center',wrapText:true}};
-    return c;
+function _estiloCelda(cell, bold){
+    cell.alignment = {horizontal:'center', vertical:'middle', wrapText:true};
+    cell.border = {
+        top:{style:'thin',color:{argb:'FF000000'}},
+        left:{style:'thin',color:{argb:'FF000000'}},
+        bottom:{style:'thin',color:{argb:'FF000000'}},
+        right:{style:'thin',color:{argb:'FF000000'}}
+    };
+    if(bold) cell.font = {bold:true};
 }
 
-function _crearHoja(registros, conEncabezados){
-    const XLSX = window.XLSX;
-    const ws = {};
-    const merges = [];
-    let f = 0;
+async function _crearLibro(registros, conEncabezados){
+    const wb = new ExcelJS.Workbook();
+    const ws = wb.addWorksheet('Datos');
 
     if(conEncabezados){
-        // Fila 1: "Velocity (fpm)" sobre G y H (cols 6 y 7), col vacía en E(4)
-        // Cols: A=Date,B=Time,C=Station,D=Repeat,E=SW,F=AN, G(vacio), H=BC,I=Corrected,J=Vprom,K=σ,L=CV,M=Large,N=Height,O=Area,P=Q
-        
-        // Fila 0: encabezado Velocity (fpm) sobre H e I
-        ws[XLSX.utils.encode_cell({r:0,c:7})] = _celda('Velocity (fpm)', true);
-        merges.push({s:{r:0,c:7}, e:{r:0,c:8}});
+        // Fila 1: Velocity (fpm) sobre H e I
+        const fila1 = ws.getRow(1);
+        fila1.height = 20;
+        let vCell = ws.getCell('H1');
+        vCell.value = 'Velocity (fpm)';
+        _estiloCelda(vCell, true);
+        ws.mergeCells('H1:I1');
 
-        // Fila 1: encabezados de columnas
-        const headers = [
-            'Date','Time','Station','Repeat',
-            'Stopwatch Reading (s)','Anemometer Reading (feet)',
-            '', // columna vacía separadora
-            'Before Correction','Corrected',
-            'Vprom (fpm)','σ','CV','Large (m)','Height (m)','Area (m2)','Q (cfm)'
-        ];
-        headers.forEach((h, c) => {
-            if(h !== '') ws[XLSX.utils.encode_cell({r:1,c})] = _celda(h, true);
+        // Merge encabezados fila 1+2 para columnas que no tienen Velocity
+        ['A','B','C','D','E','F','J','K','L','M','N','O','P'].forEach(col => {
+            ws.mergeCells(`${col}1:${col}2`);
         });
 
-        // Merge encabezados fila 1 que también abarcan fila 0 (los que no tienen Velocity arriba)
-        [0,1,2,3,4,5,9,10,11,12,13,14,15].forEach(c => {
-            merges.push({s:{r:0,c}, e:{r:1,c}});
+        // Fila 2: encabezados
+        const fila2 = ws.getRow(2);
+        fila2.height = 30;
+        const headers = {
+            A:'Date', B:'Time', C:'Station', D:'Repeat',
+            E:'Stopwatch Reading (s)', F:'Anemometer Reading (feet)',
+            H:'Before Correction', I:'Corrected',
+            J:'Vprom (fpm)', K:'σ', L:'CV',
+            M:'Large (m)', N:'Height (m)', O:'Area (m2)', P:'Q (cfm)'
+        };
+        Object.entries(headers).forEach(([col, val]) => {
+            let cell = ws.getCell(`${col}2`);
+            cell.value = val;
+            _estiloCelda(cell, true);
         });
 
-        f = 2;
+        // Aplicar borde también a celdas mergeadas de fila 1
+        ['A','B','C','D','E','F','J','K','L','M','N','O','P'].forEach(col => {
+            _estiloCelda(ws.getCell(`${col}1`), true);
+        });
     }
+
+    // Anchos de columna
+    ws.columns = [
+        {key:'A', width:12}, {key:'B', width:8}, {key:'C', width:10}, {key:'D', width:7},
+        {key:'E', width:16}, {key:'F', width:18},
+        {key:'G', width:2}, // separador vacío
+        {key:'H', width:16}, {key:'I', width:12},
+        {key:'J', width:11}, {key:'K', width:8}, {key:'L', width:8},
+        {key:'M', width:9}, {key:'N', width:10}, {key:'O', width:10}, {key:'P', width:13}
+    ];
+
+    let filaActual = conEncabezados ? 3 : 1;
 
     registros.forEach(reg => {
         const r = reg.datos;
-        const fBase = f;
+        const f = filaActual;
 
-        const filas = [
-            [r.fecha, r.hora, r.estacion, 1, parseFloat(r.sw1)||0, parseFloat(r.an1)||0, '', parseFloat(r.bc1)||0, parseFloat(r.c1)||0, parseFloat(r.vprom)||0, parseFloat(r.sigma)||0, parseFloat(r.cv)||0, parseFloat(r.largo)||0, parseFloat(r.altura)||0, parseFloat(r.area)||0, parseFloat(r.q)||0],
-            ['','','', 2, parseFloat(r.sw2)||0, parseFloat(r.an2)||0, '', parseFloat(r.bc2)||0, parseFloat(r.c2)||0, '','','','','','',''],
-            ['','','', 3, parseFloat(r.sw3)||0, parseFloat(r.an3)||0, '', parseFloat(r.bc3)||0, parseFloat(r.c3)||0, '','','','','','',''],
+        // 3 filas de datos
+        const datos = [
+            {rep:1, sw:r.sw1, an:r.an1, bc:r.bc1, c:r.c1},
+            {rep:2, sw:r.sw2, an:r.an2, bc:r.bc2, c:r.c2},
+            {rep:3, sw:r.sw3, an:r.an3, bc:r.bc3, c:r.c3},
         ];
 
-        filas.forEach((fila, i) => {
-            fila.forEach((val, c) => {
-                if(val !== '') {
-                    ws[XLSX.utils.encode_cell({r: fBase+i, c})] = _celda(typeof val === 'string' ? val : Number(val), false);
-                }
-            });
+        datos.forEach((d, i) => {
+            const fila = ws.getRow(f+i);
+            fila.height = 22;
+
+            // Repeat, SW, AN, BC, C siempre
+            let repCell = ws.getCell(`D${f+i}`);
+            repCell.value = d.rep;
+            _estiloCelda(repCell, false);
+
+            let swCell = ws.getCell(`E${f+i}`);
+            swCell.value = parseFloat(d.sw)||0;
+            _estiloCelda(swCell, false);
+
+            let anCell = ws.getCell(`F${f+i}`);
+            anCell.value = parseFloat(d.an)||0;
+            _estiloCelda(anCell, false);
+
+            let bcCell = ws.getCell(`H${f+i}`);
+            bcCell.value = parseFloat(d.bc)||0;
+            _estiloCelda(bcCell, false);
+
+            let cCell = ws.getCell(`I${f+i}`);
+            cCell.value = parseFloat(d.c)||0;
+            _estiloCelda(cCell, false);
         });
 
-        // Merge celdas combinadas: Date(0),Time(1),Station(2),Vprom(9),σ(10),CV(11),Large(12),Height(13),Area(14),Q(15)
-        [0,1,2,9,10,11,12,13,14,15].forEach(c => {
-            merges.push({s:{r:fBase,c}, e:{r:fBase+2,c}});
+        // Celdas combinadas (3 filas): Date, Time, Station, Vprom, σ, CV, Large, Height, Area, Q
+        ws.mergeCells(`A${f}:A${f+2}`);
+        ws.mergeCells(`B${f}:B${f+2}`);
+        ws.mergeCells(`C${f}:C${f+2}`);
+        ws.mergeCells(`J${f}:J${f+2}`);
+        ws.mergeCells(`K${f}:K${f+2}`);
+        ws.mergeCells(`L${f}:L${f+2}`);
+        ws.mergeCells(`M${f}:M${f+2}`);
+        ws.mergeCells(`N${f}:N${f+2}`);
+        ws.mergeCells(`O${f}:O${f+2}`);
+        ws.mergeCells(`P${f}:P${f+2}`);
+
+        const vals = {
+            A: r.fecha, B: r.hora, C: r.estacion,
+            J: parseFloat(r.vprom)||0, K: parseFloat(r.sigma)||0, L: parseFloat(r.cv)||0,
+            M: parseFloat(r.largo)||0, N: parseFloat(r.altura)||0,
+            O: parseFloat(r.area)||0, P: parseFloat(r.q)||0
+        };
+        Object.entries(vals).forEach(([col, val]) => {
+            let cell = ws.getCell(`${col}${f}`);
+            cell.value = val;
+            _estiloCelda(cell, false);
         });
 
-        f += 4; // 3 filas datos + 1 vacía
+        filaActual += 4;
     });
 
-    ws['!merges'] = merges;
-    ws['!ref'] = XLSX.utils.encode_range({s:{r:0,c:0}, e:{r:f, c:15}});
-    ws['!cols'] = [
-        {wch:12},{wch:8},{wch:10},{wch:7},
-        {wch:16},{wch:18},
-        {wch:2}, // col vacía separadora
-        {wch:16},{wch:12},
-        {wch:11},{wch:8},{wch:8},{wch:9},{wch:10},{wch:10},{wch:13}
-    ];
-    ws['!rows'] = [];
-    for(let i = 0; i < f; i++) ws['!rows'][i] = {hpt: 30};
-
-    return ws;
+    return wb;
 }
 
-window.exportarSimple = function(index){
-    const XLSX = window.XLSX;
+window.exportarSimple = async function(index){
     let nombre = registrosCache[index].nombre;
-    let wb = XLSX.utils.book_new();
-    let ws = _crearHoja([registrosCache[index]], false);
-    XLSX.utils.book_append_sheet(wb, ws, 'Datos');
-    _descargar(wb, nombre + '.xlsx');
+    let wb = await _crearLibro([registrosCache[index]], false);
+    await _descargar(wb, nombre + '.xlsx');
 }
 
-window.exportarConDetalles = function(index){
-    const XLSX = window.XLSX;
+window.exportarConDetalles = async function(index){
     let nombre = registrosCache[index].nombre;
-    let wb = XLSX.utils.book_new();
-    let ws = _crearHoja([registrosCache[index]], true);
-    XLSX.utils.book_append_sheet(wb, ws, 'Datos');
-    _descargar(wb, nombre + '_detalles.xlsx');
+    let wb = await _crearLibro([registrosCache[index]], true);
+    await _descargar(wb, nombre + '_detalles.xlsx');
 }
 
-window.exportarTodo = function(){
-    const XLSX = window.XLSX;
+window.exportarTodo = async function(){
     if(registrosCache.length === 0){ alert('No hay registros.'); return; }
-    let wb = XLSX.utils.book_new();
-    let ws = _crearHoja(registrosCache, true);
-    XLSX.utils.book_append_sheet(wb, ws, 'Datos');
-    _descargar(wb, 'registros_completos.xlsx');
+    let wb = await _crearLibro(registrosCache, true);
+    await _descargar(wb, 'registros_completos.xlsx');
 }
 
 function renderLista(){
