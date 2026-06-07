@@ -130,13 +130,14 @@ button:hover{
 }
 
 .app-header button{
-    background:none;
-    border:none;
-    color:#333;
-    font-size:13px;
-    margin-top:0;
-    width:auto;
-    padding:0;
+    background:none !important;
+    border:none !important;
+    color:#333 !important;
+    font-size:13px !important;
+    margin-top:0 !important;
+    width:auto !important;
+    padding:4px 8px !important;
+    font-weight:normal !important;
 }
 
 button:active{
@@ -460,7 +461,10 @@ window.loginGoogle = async function(){
     }
 };
 
-window.logout = async function(){ await signOut(auth); };
+window.logout = async function(){
+    if(!confirm('¿Cerrar sesión?')) return;
+    await signOut(auth);
+};
 
 onAuthStateChanged(auth, user => {
     if(user){
