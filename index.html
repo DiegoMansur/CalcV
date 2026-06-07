@@ -573,24 +573,6 @@ async function guardarRegistro(){
     document.getElementById('hora').value = hoy.toTimeString().slice(0,5);
 }
 
-  registros.push(nuevo);
-  localStorage.setItem("registrosApp", JSON.stringify(registros));
-
-  alert("Guardado correctamente ✅");
-
-  // Limpiar todo
-  document.querySelectorAll('input').forEach(el => el.value = '');
-  ['bc1','bc2','bc3','c1','c2','c3','vprom','sigma','cv','area','q']
-    .forEach(id => document.getElementById(id).textContent = '');
-  // Restaurar fecha/hora
-  const hoy = new Date();
-  document.getElementById('fecha').value = hoy.getFullYear() + '-' + 
-      String(hoy.getMonth()+1).padStart(2,'0') + '-' + 
-      String(hoy.getDate()).padStart(2,'0');
-  document.getElementById('hora').value = hoy.toTimeString().slice(0,5);
-    
-}
-
 // === MODO VISTA ===
 
 function obtenerParametro(nombre){
